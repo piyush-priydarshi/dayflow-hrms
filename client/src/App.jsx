@@ -10,6 +10,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
+import VerifyEmail from './pages/VerifyEmail';
 import Attendance from './pages/Attendance';
 import Leave from './pages/Leave';
 import Payroll from './pages/Payroll';
@@ -26,12 +27,21 @@ function App() {
               <Route path="/" element={<Landing />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
 
               {/* Protected Routes */}
               <Route
                 path="/dashboard"
                 element={
                   <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin-dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['Admin']}>
                     <Dashboard />
                   </ProtectedRoute>
                 }
