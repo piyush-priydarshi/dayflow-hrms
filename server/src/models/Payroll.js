@@ -7,6 +7,10 @@ const payrollSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
+  employeeId: {
+    type: String,
+    required: false,
+  },
   baseSalary: {
     type: Number,
     required: [true, 'Base salary is required'],
