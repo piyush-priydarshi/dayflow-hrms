@@ -39,10 +39,14 @@ More features will be added based on the hackathon requirements.
 - Vite
 - Tailwind CSS
 - React Router
+- Toastify
 
 ### Backend
 - Node.js
 - Express.js
+
+## LLM/AI
+- Claude API
 
 ### Database
 - MongoDB
@@ -51,13 +55,6 @@ More features will be added based on the hackathon requirements.
 ### Authentication
 - JWT
 - Local storage for client-side session handling
-
-### Design & Development
-- Spline
-- 21st.dev
-- GitHub
-- Antigravity
-- Claude
 
 ---
 

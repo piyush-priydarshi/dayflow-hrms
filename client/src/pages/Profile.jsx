@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth, API_URL } from '../context/AuthContext';
+
 import { useToast } from '../context/ToastContext';
+import DatePicker from '../components/DatePicker';
+
 
 const Profile = () => {
   const { userId } = useParams();
@@ -68,7 +71,6 @@ const Profile = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validate image file type
     if (!file.type.startsWith('image/')) {
       const msg = 'Please select a valid image file';
       setError(msg);
@@ -76,7 +78,6 @@ const Profile = () => {
       return;
     }
 
-    // Convert file to Base64 Data URL for immediate preview and persistent storage
     const reader = new FileReader();
     reader.onload = () => {
       setProfilePicture(reader.result);
@@ -131,7 +132,7 @@ const Profile = () => {
   const handleAddDocument = (e) => {
     e.preventDefault();
     if (!newDocumentUrl.trim()) return;
-    const updatedDocs = [...documents, newDocumentUrl];
+    const updatedDocs = [...documents, newDocumentUrl.trim()];
     setDocuments(updatedDocs);
     setNewDocumentUrl('');
     saveDocuments(updatedDocs);
@@ -174,21 +175,21 @@ const Profile = () => {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6">
-        <p className="text-gray-500">Loading profile...</p>
+      <div className="container mx-auto px-6 py-12 text-center">
+        <p className="text-zinc-500 text-sm">Loading personnel record...</p>
       </div>
     );
   }
 
   if (error && !profile) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="bg-red-50 text-red-700 p-4 rounded border border-red-200">
-          <p className="font-bold">Error</p>
+      <div className="container mx-auto px-6 py-12 max-w-2xl">
+        <div className="bg-rose-500/10 text-rose-400 p-6 rounded-3xl border border-rose-500/20 text-xs">
+          <p className="font-bold text-sm mb-1">Error</p>
           <p>{error}</p>
         </div>
-        <Link to="/dashboard" className="text-blue-600 underline mt-4 inline-block">
-          Back to Dashboard
+        <Link to="/dashboard" className="text-amber-400 hover:underline mt-4 inline-block text-xs font-semibold">
+          ← Back to Dashboard
         </Link>
       </div>
     );
@@ -199,168 +200,232 @@ const Profile = () => {
   const canEdit = isOwner || isAdmin;
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Employee Profile</h1>
-        <Link to="/dashboard" className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded text-sm font-medium">
-          Back to Dashboard
-        </Link>
+    <div className="container mx-auto px-6 py-8 space-y-8 max-w-6xl">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="font-heading text-3xl font-bold text-white tracking-tight">Personnel Profile</h1>
+          <p className="text-xs text-zinc-400 mt-1">Master employment and contact record</p>
+        </div>
+        <div className="flex items-center gap-3">
+          {canEdit && !isEditing && (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
+            >
+              Edit Fields
+            </button>
+          )}
+          <Link
+            to="/dashboard"
+            className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-200 rounded-xl text-xs font-semibold transition-colors"
+          >
+            ← Dashboard
+          </Link>
+        </div>
       </div>
 
       {successMsg && (
-        <div className="bg-green-50 text-green-700 p-3 rounded border border-green-200 mb-6 text-sm">
-          {successMsg}
+        <div className="bg-emerald-500/10 text-emerald-400 p-4 rounded-2xl border border-emerald-500/20 text-xs flex items-center gap-2">
+          <span>✓</span>
+          <span>{successMsg}</span>
         </div>
       )}
 
       {error && (
-        <div className="bg-red-50 text-red-700 p-3 rounded border border-red-200 mb-6 text-sm">
-          {error}
+        <div className="bg-rose-500/10 text-rose-400 p-4 rounded-2xl border border-rose-500/20 text-xs flex items-center gap-2">
+          <span>⚠️</span>
+          <span>{error}</span>
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Profile Summary Card */}
-        <div className="bg-white p-6 rounded border border-gray-300 shadow-sm text-center">
-          <div className="w-32 h-32 bg-gray-200 rounded-full mx-auto mb-4 border border-gray-300 overflow-hidden flex items-center justify-center">
-            {profile.profilePicture ? (
-              <img src={profile.profilePicture} alt={profile.user?.name} className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-3xl text-gray-400 font-bold">
-                {profile.user?.name ? profile.user.name.charAt(0).toUpperCase() : '?'}
-              </span>
-            )}
-          </div>
-          <h2 className="text-xl font-bold text-gray-800">{profile.user?.name || 'N/A'}</h2>
-          <p className="text-gray-500 text-sm font-medium uppercase tracking-wider">{profile.designation || 'Staff'}</p>
-          <p className="text-xs text-gray-400 mt-1">{profile.department || 'General'} Department</p>
-          
-          <div className="mt-6 text-left border-t border-gray-200 pt-4 space-y-2 text-sm text-gray-700">
-            <p><strong>Employee ID:</strong> {profile.user?.employeeId || 'N/A'}</p>
-            <p><strong>Email:</strong> {profile.user?.email || 'N/A'}</p>
-            <p><strong>Role:</strong> {profile.user?.role || 'Employee'}</p>
-            <p><strong>Joined:</strong> {profile.joiningDate ? new Date(profile.joiningDate).toLocaleDateString() : 'N/A'}</p>
-          </div>
-        </div>
-
-        {/* Edit Form / Details view */}
-        <div className="bg-white p-6 rounded border border-gray-300 shadow-sm md:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column: Avatar & Summary Card */}
+        <div className="df-glass-card rounded-3xl p-6 flex flex-col justify-between text-center border-zinc-800">
           <div>
-            <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-3">
-              <h3 className="text-lg font-bold text-gray-800">Profile Details</h3>
-              {canEdit && !isEditing && (
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="px-3 py-1 bg-gray-800 hover:bg-gray-700 text-white rounded text-sm cursor-pointer"
-                >
-                  Edit Fields
-                </button>
+            {/* Avatar Photo */}
+            <div className="w-32 h-32 rounded-3xl mx-auto mb-4 bg-zinc-800 border border-zinc-700/80 overflow-hidden flex items-center justify-center shadow-lg relative group">
+              {profile.profilePicture ? (
+                <img
+                  src={profile.profilePicture}
+                  alt={profile.user?.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => { e.target.style.display = 'none'; }}
+                />
+              ) : (
+                <span className="font-heading text-4xl text-amber-400 font-bold">
+                  {profile.user?.name ? profile.user.name.charAt(0).toUpperCase() : '?'}
+                </span>
               )}
             </div>
 
-            {isEditing ? (
-              <form onSubmit={handleUpdate} className="space-y-4 text-sm">
+            <h2 className="font-heading text-2xl font-bold text-white tracking-tight">
+              {profile.user?.name || 'N/A'}
+            </h2>
+            <p className="text-amber-400 text-xs font-bold uppercase tracking-wider mt-1">
+              {profile.designation || 'Staff'}
+            </p>
+            <p className="text-xs text-zinc-400 mt-0.5">
+              {profile.department || 'General'} Department
+            </p>
+
+            <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-800/80 border border-zinc-700/60 text-xs font-medium text-zinc-300">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              {profile.user?.role || 'Employee'}
+            </div>
+          </div>
+
+          <div className="mt-6 text-left border-t border-zinc-800 pt-4 space-y-3 text-xs text-zinc-300">
+            <div>
+              <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">Employee ID</span>
+              <span className="font-mono text-zinc-200 font-semibold">{profile.user?.employeeId || 'N/A'}</span>
+            </div>
+
+            <div>
+              <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">Work Email</span>
+              <span className="text-zinc-200 break-all">{profile.user?.email || 'N/A'}</span>
+            </div>
+
+            <div>
+              <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">Joining Date</span>
+              <span className="text-zinc-200">
+                {profile.joiningDate ? new Date(profile.joiningDate).toLocaleDateString() : 'N/A'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Edit Form OR Detailed Cards */}
+        <div className="lg:col-span-2 space-y-6">
+          {isEditing ? (
+            <div className="df-glass-card rounded-3xl p-6 md:p-8 border-zinc-800">
+              <div className="flex justify-between items-center mb-6 pb-3 border-b border-zinc-800">
+                <h3 className="font-heading text-lg font-bold text-white">Edit Profile Record</h3>
+                <span className="text-xs text-zinc-500">
+                  {isAdmin ? 'Admin Mode (All fields editable)' : 'Employee Mode (Contact & photo)'}
+                </span>
+              </div>
+
+              <form onSubmit={handleUpdate} className="space-y-5 text-xs">
                 {isAdmin && (
-                  <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-gray-700 font-medium mb-1">Full Name (Admin Only)</label>
+                      <label className="block text-zinc-300 font-semibold mb-1.5">
+                        Full Name (Admin Only)
+                      </label>
                       <input
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="w-full p-2 border border-gray-300 rounded"
+                        className="w-full df-input"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-gray-700 font-medium mb-1">Department (Admin Only)</label>
+                      <label className="block text-zinc-300 font-semibold mb-1.5">
+                        Department (Admin Only)
+                      </label>
                       <input
                         type="text"
                         value={department}
                         onChange={(e) => setDepartment(e.target.value)}
-                        className="w-full p-2 border border-gray-300 rounded"
+                        className="w-full df-input"
                       />
                     </div>
                     <div>
-                      <label className="block text-gray-700 font-medium mb-1">Designation (Admin Only)</label>
+                      <label className="block text-zinc-300 font-semibold mb-1.5">
+                        Designation (Admin Only)
+                      </label>
                       <input
                         type="text"
                         value={designation}
                         onChange={(e) => setDesignation(e.target.value)}
-                        className="w-full p-2 border border-gray-300 rounded"
+                        className="w-full df-input"
                       />
                     </div>
                     <div>
-                      <label className="block text-gray-700 font-medium mb-1">Joining Date (Admin Only)</label>
-                      <input
-                        type="date"
+                      <label className="block text-zinc-300 font-semibold mb-1.5">
+                        Joining Date (Admin Only)
+                      </label>
+                      <DatePicker
                         value={joiningDate}
-                        onChange={(e) => setJoiningDate(e.target.value)}
-                        className="w-full p-2 border border-gray-300 rounded"
+                        onChange={(date) => setJoiningDate(date)}
+                        placeholder="Select joining date"
                       />
                     </div>
-                  </>
+                  </div>
                 )}
 
-                <div>
-                  <label className="block text-gray-700 font-medium mb-1">Contact Phone</label>
-                  <input
-                    type="text"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded"
-                    placeholder="+1234567890"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-gray-700 font-medium mb-1">Home Address</label>
-                  <textarea
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded h-20"
-                    placeholder="Street, City, Country"
-                  />
-                </div>
-
-                {/* Profile Photo: Upload File or specify URL */}
-                <div className="p-3 bg-gray-50 border border-gray-200 rounded space-y-2">
-                  <label className="block text-gray-700 font-medium">Profile Photo</label>
-                  
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1">Upload from Device:</label>
+                    <label className="block text-zinc-300 font-semibold mb-1.5">
+                      Contact Phone
+                    </label>
                     <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileUpload}
-                      className="w-full text-xs text-gray-700 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-gray-800 file:text-white hover:file:bg-gray-700 cursor-pointer"
+                      type="text"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="w-full df-input"
+                      placeholder="+1 (555) 000-0000"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1">Or Image URL:</label>
+                    <label className="block text-zinc-300 font-semibold mb-1.5">
+                      Residential Address
+                    </label>
                     <input
                       type="text"
-                      value={profilePicture}
-                      onChange={(e) => setProfilePicture(e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded text-xs"
-                      placeholder="https://example.com/photo.jpg"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      className="w-full df-input"
+                      placeholder="Street, City, State"
                     />
+                  </div>
+                </div>
+
+                {/* Profile Photo Upload Section */}
+                <div className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-3">
+                  <label className="block text-zinc-300 font-semibold">
+                    Profile Photo Upload
+                  </label>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] text-zinc-400 mb-1">Choose Image File from Device:</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileUpload}
+                        className="w-full text-xs text-zinc-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-zinc-800 file:text-zinc-200 hover:file:bg-zinc-700 cursor-pointer"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] text-zinc-400 mb-1">Or Paste Image URL:</label>
+                      <input
+                        type="text"
+                        value={profilePicture}
+                        onChange={(e) => setProfilePicture(e.target.value)}
+                        className="w-full df-input"
+                        placeholder="https://example.com/avatar.jpg"
+                      />
+                    </div>
                   </div>
 
                   {profilePicture && (
-                    <div className="flex items-center gap-3 pt-1">
-                      <span className="text-xs text-gray-500">Preview:</span>
+                    <div className="flex items-center gap-3 pt-2">
+                      <span className="text-xs text-zinc-400">Preview:</span>
                       <img
                         src={profilePicture}
                         alt="Preview"
-                        className="w-10 h-10 rounded-full object-cover border border-gray-300"
+                        className="w-10 h-10 rounded-xl object-cover border border-zinc-700"
                         onError={(e) => { e.target.style.display = 'none'; }}
                       />
                       <button
                         type="button"
                         onClick={() => setProfilePicture('')}
-                        className="text-xs text-red-600 hover:underline cursor-pointer"
+                        className="text-xs text-rose-400 hover:underline cursor-pointer"
                       >
                         Remove Photo
                       </button>
@@ -368,13 +433,7 @@ const Profile = () => {
                   )}
                 </div>
 
-                <div className="flex space-x-2 pt-2">
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded font-medium cursor-pointer"
-                  >
-                    Save Changes
-                  </button>
+                <div className="flex justify-end space-x-3 pt-4 border-t border-zinc-800">
                   <button
                     type="button"
                     onClick={() => {
@@ -386,119 +445,151 @@ const Profile = () => {
                       setDesignation(profile.designation || '');
                       setProfilePicture(profile.profilePicture || '');
                     }}
-                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded font-medium cursor-pointer"
+                    className="px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 font-semibold rounded-xl text-xs cursor-pointer transition-colors"
                   >
                     Cancel
                   </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 font-bold rounded-xl text-xs cursor-pointer transition-all shadow-sm hover:scale-105"
+                  >
+                    Save Changes
+                  </button>
                 </div>
               </form>
-            ) : (
-              <div className="space-y-4 text-sm text-gray-800">
-                <div className="grid grid-cols-2 gap-4 border-b border-gray-100 pb-3">
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium uppercase">Phone Number</p>
-                    <p className="mt-1 font-medium">{profile.phone || 'No phone recorded'}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium uppercase">Home Address</p>
-                    <p className="mt-1 font-medium">{profile.address || 'No address recorded'}</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 border-b border-gray-100 pb-3">
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium uppercase">Department</p>
-                    <p className="mt-1 font-medium">{profile.department}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium uppercase">Job Designation</p>
-                    <p className="mt-1 font-medium">{profile.designation}</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 border-b border-gray-100 pb-3">
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium uppercase">Joining Date</p>
-                    <p className="mt-1 font-medium">
-                      {profile.joiningDate ? new Date(profile.joiningDate).toLocaleDateString() : 'N/A'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium uppercase">Profile Photo</p>
-                    <p className="mt-1 text-xs">
-                      {profile.profilePicture ? 'Custom photo attached' : 'No photo uploaded'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Read-Only Salary Structure */}
-                <div className="mt-6 border-t border-gray-200 pt-4">
-                  <h4 className="text-base font-bold text-gray-800 mb-2">Salary Structure (Read-Only)</h4>
-                  {payroll ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-xs">
-                      <div className="bg-gray-50 p-2.5 rounded border border-gray-200">
-                        <span className="text-gray-500 font-semibold block uppercase">Base</span>
-                        <span className="font-bold text-gray-800 text-sm mt-0.5 block">${payroll.baseSalary?.toLocaleString() || 0}</span>
-                      </div>
-                      <div className="bg-gray-50 p-2.5 rounded border border-gray-200">
-                        <span className="text-green-600 font-semibold block uppercase">Allowances</span>
-                        <span className="font-bold text-green-700 text-sm mt-0.5 block">+${payroll.allowances?.toLocaleString() || 0}</span>
-                      </div>
-                      <div className="bg-gray-50 p-2.5 rounded border border-gray-200">
-                        <span className="text-red-600 font-semibold block uppercase">Deductions</span>
-                        <span className="font-bold text-red-700 text-sm mt-0.5 block">-${payroll.deductions?.toLocaleString() || 0}</span>
-                      </div>
-                      <div className="bg-gray-800 text-white p-2.5 rounded">
-                        <span className="text-gray-300 font-semibold block uppercase">Net</span>
-                        <span className="font-bold text-white text-sm mt-0.5 block">${payroll.netSalary?.toLocaleString() || 0}</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-xs text-gray-500 italic">No payroll record attached.</p>
-                  )}
-                </div>
-
-                {/* Documents Management Section */}
-                <div className="mt-6 border-t border-gray-200 pt-4">
-                  <h4 className="text-base font-bold text-gray-800 mb-2">Verification Documents</h4>
-                  
-                  <form onSubmit={handleAddDocument} className="flex gap-2 mb-3">
-                    <input
-                      type="text"
-                      value={newDocumentUrl}
-                      onChange={(e) => setNewDocumentUrl(e.target.value)}
-                      className="flex-1 p-2 border border-gray-300 rounded text-xs"
-                      placeholder="Add Document URL (e.g., Passport, Contract URL)"
-                    />
-                    <button type="submit" className="px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-semibold rounded cursor-pointer">
-                      Add
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Card 1: Contact Details */}
+              <div className="df-glass-card rounded-3xl p-6 border-zinc-800 space-y-4">
+                <div className="flex justify-between items-center pb-3 border-b border-zinc-800">
+                  <h3 className="font-heading text-base font-bold text-white">Contact & Location</h3>
+                  {canEdit && (
+                    <button
+                      onClick={() => setIsEditing(true)}
+                      className="text-xs text-amber-400 hover:underline font-semibold cursor-pointer"
+                    >
+                      Edit →
                     </button>
-                  </form>
-
-                  {documents.length === 0 ? (
-                    <p className="text-xs text-gray-500 italic">No files or documents attached.</p>
-                  ) : (
-                    <ul className="space-y-1.5">
-                      {documents.map((doc, idx) => (
-                        <li key={idx} className="flex justify-between items-center text-xs bg-gray-50 border border-gray-200 p-2 rounded">
-                          <a href={doc} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium truncate max-w-md">
-                            {doc}
-                          </a>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveDocument(idx)}
-                            className="text-red-600 hover:text-red-800 font-bold px-1"
-                          >
-                            Remove
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
                   )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">Phone Number</span>
+                    <span className="text-zinc-200 font-medium mt-1 block">{profile.phone || 'No phone recorded'}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">Residential Address</span>
+                    <span className="text-zinc-200 font-medium mt-1 block">{profile.address || 'No address recorded'}</span>
+                  </div>
                 </div>
               </div>
-            )}
-          </div>
+
+              {/* Card 2: Read-Only Salary Breakdown from Payroll Schema */}
+              <div className="df-glass-card rounded-3xl p-6 border-zinc-800 space-y-4">
+                <div className="flex justify-between items-center pb-3 border-b border-zinc-800">
+                  <div>
+                    <h3 className="font-heading text-base font-bold text-white">Salary Structure</h3>
+                    <p className="text-[11px] text-zinc-500">Live read-only pull from Payroll ledger</p>
+                  </div>
+                  <Link
+                    to="/payroll"
+                    className="text-xs text-amber-400 hover:underline font-semibold"
+                  >
+                    Payslip Portal →
+                  </Link>
+                </div>
+
+                {payroll ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-xs">
+                    <div className="p-3 rounded-2xl bg-zinc-950/70 border border-zinc-800/80">
+                      <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider block">Base Salary</span>
+                      <span className="font-heading text-base font-bold text-white mt-1 block">
+                        ${payroll.baseSalary?.toLocaleString() || 0}
+                      </span>
+                    </div>
+
+                    <div className="p-3 rounded-2xl bg-zinc-950/70 border border-emerald-500/20">
+                      <span className="text-emerald-400 text-[10px] font-bold uppercase tracking-wider block">Allowances</span>
+                      <span className="font-heading text-base font-bold text-emerald-400 mt-1 block">
+                        +${payroll.allowances?.toLocaleString() || 0}
+                      </span>
+                    </div>
+
+                    <div className="p-3 rounded-2xl bg-zinc-950/70 border border-rose-500/20">
+                      <span className="text-rose-400 text-[10px] font-bold uppercase tracking-wider block">Deductions</span>
+                      <span className="font-heading text-base font-bold text-rose-400 mt-1 block">
+                        -${payroll.deductions?.toLocaleString() || 0}
+                      </span>
+                    </div>
+
+                    <div className="p-3 rounded-2xl bg-gradient-to-tr from-amber-500/20 to-orange-600/20 border border-amber-500/30">
+                      <span className="text-amber-300 text-[10px] font-bold uppercase tracking-wider block">Net Earnings</span>
+                      <span className="font-heading text-base font-black text-amber-300 mt-1 block">
+                        ${payroll.netSalary?.toLocaleString() || 0}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-zinc-500 italic">No payroll configuration mapped for this employee.</p>
+                )}
+              </div>
+
+              {/* Card 3: Verification Documents */}
+              <div className="df-glass-card rounded-3xl p-6 border-zinc-800 space-y-4">
+                <div className="flex justify-between items-center pb-3 border-b border-zinc-800">
+                  <h3 className="font-heading text-base font-bold text-white">Verification Documents</h3>
+                  <span className="text-xs text-zinc-500">{documents.length} files attached</span>
+                </div>
+
+                <form onSubmit={handleAddDocument} className="flex gap-2 text-xs">
+                  <input
+                    type="url"
+                    value={newDocumentUrl}
+                    onChange={(e) => setNewDocumentUrl(e.target.value)}
+                    placeholder="Attach document URL (e.g. Identity proof, Passport, Contract link)..."
+                    className="flex-1 df-input"
+                  />
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-bold rounded-xl border border-zinc-700 cursor-pointer transition-colors"
+                  >
+                    Add Document
+                  </button>
+                </form>
+
+                {documents.length === 0 ? (
+                  <p className="text-xs text-zinc-500 italic py-2">No documents attached.</p>
+                ) : (
+                  <ul className="space-y-2 text-xs">
+                    {documents.map((doc, idx) => (
+                      <li key={idx} className="flex justify-between items-center p-3 rounded-xl bg-zinc-950/60 border border-zinc-800/80 hover:border-zinc-700 transition-colors">
+                        <div className="flex items-center gap-2 truncate max-w-md">
+                          <span className="text-zinc-400">📄</span>
+                          <a
+                            href={doc}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-amber-400 hover:underline font-mono truncate"
+                          >
+                            {doc}
+                          </a>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveDocument(idx)}
+                          className="text-rose-400 hover:text-rose-300 font-bold text-xs px-2 py-1 cursor-pointer"
+                        >
+                          Remove
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -77,7 +77,6 @@ const PayrollAdmin = () => {
         setAllowances(data.payroll.allowances || 0);
         setDeductions(data.payroll.deductions || 0);
       } else {
-        // Reset inputs if no payroll is recorded yet
         setBaseSalary(0);
         setAllowances(0);
         setDeductions(0);
@@ -137,104 +136,111 @@ const PayrollAdmin = () => {
 
   if (loading && employees.length === 0) {
     return (
-      <div className="container mx-auto p-6">
-        <p className="text-gray-500 font-medium">Loading directories...</p>
+      <div className="container mx-auto px-6 py-12 text-center">
+        <p className="text-zinc-500 text-sm">Loading payroll configuration console...</p>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Manage Payroll</h1>
-        <Link to="/admin-dashboard" className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded text-sm font-medium">
-          Back to Admin Dashboard
+    <div className="container mx-auto px-6 py-8 space-y-8 max-w-5xl">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="font-heading text-3xl font-bold text-white tracking-tight">Manage Employee Payroll</h1>
+          <p className="text-xs text-zinc-400 mt-1">Configure compensation rates, benefits, and deductions</p>
+        </div>
+        <Link
+          to="/admin-dashboard"
+          className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-200 rounded-xl text-xs font-semibold transition-colors"
+        >
+          ← Admin Dashboard
         </Link>
       </div>
 
       {error && (
-        <div className="bg-red-50 text-red-700 p-3 rounded border border-red-200 mb-6 text-sm">
+        <div className="bg-rose-500/10 text-rose-400 p-4 rounded-2xl border border-rose-500/20 text-xs">
           {error}
         </div>
       )}
 
       {success && (
-        <div className="bg-green-50 text-green-700 p-3 rounded border border-green-200 mb-6 text-sm">
+        <div className="bg-emerald-500/10 text-emerald-400 p-4 rounded-2xl border border-emerald-500/20 text-xs">
           {success}
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Side: Select Employee */}
-        <div className="bg-white p-6 rounded border border-gray-300 shadow-sm h-fit">
-          <h2 className="text-lg font-bold text-gray-800 mb-4">Choose Staff</h2>
-          <div className="space-y-3">
-            <label className="block text-sm font-medium text-gray-700">Select Employee</label>
-            <select
-              value={selectedUserId}
-              onChange={handleEmployeeChange}
-              className="w-full p-2 border border-gray-300 rounded bg-white text-sm focus:outline-none focus:border-gray-500"
-            >
-              <option value="">-- Choose Employee --</option>
-              {employees.map((emp) => (
-                <option key={emp.user?._id} value={emp.user?._id}>
-                  {emp.user?.name} ({emp.user?.employeeId})
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="df-glass-card rounded-3xl p-6 border-zinc-800 h-fit space-y-3">
+          <h2 className="font-heading text-lg font-bold text-white mb-2">Select Staff</h2>
+          <label className="block text-xs font-semibold text-zinc-400">Employee Account</label>
+          <select
+            value={selectedUserId}
+            onChange={handleEmployeeChange}
+            className="w-full df-input cursor-pointer"
+          >
+            <option value="" className="bg-zinc-900 text-white">-- Choose Employee --</option>
+            {employees.map((emp) => (
+              <option key={emp.user?._id} value={emp.user?._id} className="bg-zinc-900 text-white">
+                {emp.user?.name} ({emp.user?.employeeId})
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Right Side: Setup Salary Fields */}
-        <div className="bg-white p-6 rounded border border-gray-300 shadow-sm md:col-span-2">
-          <h2 className="text-lg font-bold text-gray-800 mb-4 border-b border-gray-200 pb-3">
-            Salary Setup Form
-          </h2>
+        <div className="df-glass-card rounded-3xl p-8 border-zinc-800 lg:col-span-2 space-y-6">
+          <div className="pb-3 border-b border-zinc-800">
+            <h2 className="font-heading text-lg font-bold text-white">
+              Compensation Setup
+            </h2>
+            <p className="text-[11px] text-zinc-500">Define base monthly rate, allowance packages, and tax deductions</p>
+          </div>
 
           {!selectedUserId ? (
-            <p className="text-gray-500 italic text-sm">Select an employee from the dropdown list to manage earnings.</p>
+            <p className="text-zinc-500 italic text-xs py-6 text-center">Select an employee from the dropdown list on the left to configure payroll.</p>
           ) : (
-            <form onSubmit={handleFormSubmit} className="space-y-4 text-sm">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <form onSubmit={handleFormSubmit} className="space-y-5 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-gray-700 font-medium mb-1">Base Salary ($)</label>
+                  <label className="block text-zinc-300 font-semibold mb-1.5">Base Salary ($)</label>
                   <input
                     type="number"
                     value={baseSalary}
                     onChange={(e) => setBaseSalary(Number(e.target.value))}
-                    className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-gray-500"
+                    className="w-full df-input"
                     required
                     min="0"
                   />
                 </div>
                 <div>
-                  <label className="block text-gray-700 font-medium mb-1">Allowances ($)</label>
+                  <label className="block text-zinc-300 font-semibold mb-1.5">Allowances ($)</label>
                   <input
                     type="number"
                     value={allowances}
                     onChange={(e) => setAllowances(Number(e.target.value))}
-                    className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-gray-500"
+                    className="w-full df-input"
                     min="0"
                   />
                 </div>
                 <div>
-                  <label className="block text-gray-700 font-medium mb-1">Deductions ($)</label>
+                  <label className="block text-zinc-300 font-semibold mb-1.5">Deductions ($)</label>
                   <input
                     type="number"
                     value={deductions}
                     onChange={(e) => setDeductions(Number(e.target.value))}
-                    className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-gray-500"
+                    className="w-full df-input"
                     min="0"
                   />
                 </div>
               </div>
 
-              <div className="bg-gray-50 p-4 rounded border border-gray-200 flex justify-between items-center mt-6">
+              <div className="p-4 rounded-2xl bg-zinc-950/70 border border-zinc-800/80 flex justify-between items-center mt-6">
                 <div>
-                  <span className="font-bold text-gray-800">Net Salary (Live Preview):</span>
-                  <p className="text-xs text-gray-400 mt-0.5">Note: Recomputed securely on the server upon saving.</p>
+                  <span className="font-bold text-zinc-200 text-xs block">Computed Net Monthly Salary:</span>
+                  <p className="text-[10px] text-zinc-500 mt-0.5">Formula: Base Salary + Allowances - Deductions</p>
                 </div>
-                <span className="font-bold text-gray-900 text-lg">
+                <span className="font-heading text-2xl font-black text-amber-400">
                   ${computedNetSalary.toLocaleString()}
                 </span>
               </div>
@@ -243,9 +249,9 @@ const PayrollAdmin = () => {
                 <button
                   type="submit"
                   disabled={submitLoading}
-                  className="px-6 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded font-medium cursor-pointer transition-colors disabled:bg-gray-400"
+                  className="px-6 py-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 font-bold rounded-xl text-xs cursor-pointer transition-all shadow-md disabled:opacity-40"
                 >
-                  {submitLoading ? 'Updating Database...' : 'Save Configuration'}
+                  {submitLoading ? 'Updating Ledger...' : 'Save Compensation Setup'}
                 </button>
               </div>
             </form>

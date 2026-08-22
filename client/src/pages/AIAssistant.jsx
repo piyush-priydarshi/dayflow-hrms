@@ -17,6 +17,12 @@ const AIAssistant = () => {
   const [error, setError] = useState('');
   const messagesEndRef = useRef(null);
 
+  const quickPrompts = [
+    "How many leave requests have I submitted?",
+    "Summarize my attendance logs.",
+    "What is my current leave status?",
+  ];
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -26,13 +32,12 @@ const AIAssistant = () => {
   }, [messages]);
 
   const handleSendMessage = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setError('');
 
     const text = inputText.trim();
     if (!text) return;
 
-    // User Message addition
     const userMsg = {
       id: Date.now().toString(),
       sender: 'user',
@@ -75,53 +80,69 @@ const AIAssistant = () => {
     }
   };
 
+  const handleQuickPrompt = (prompt) => {
+    setInputText(prompt);
+  };
+
   if (!user) return null;
 
   return (
-    <div className="container mx-auto p-6 max-w-2xl flex flex-col h-[85vh]">
+    <div className="container mx-auto px-6 py-6 max-w-4xl flex flex-col h-[calc(100vh-85px)]">
+      {/* Header */}
       <div className="flex justify-between items-center mb-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">DayFlow AI HR Assistant</h1>
-          <p className="text-xs text-gray-500 mt-0.5">Auditing your logs via secure read-only context queries.</p>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-purple-600 flex items-center justify-center text-lg shadow-md shadow-amber-500/20">
+            ✨
+          </div>
+          <div>
+            <h1 className="font-heading text-xl font-bold text-white tracking-tight">DayFlow AI HR Assistant</h1>
+            <p className="text-xs text-zinc-400">Contextual natural-language query engine</p>
+          </div>
         </div>
-        <Link to="/dashboard" className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded text-sm font-medium">
-          Back to Dashboard
+        <Link
+          to="/dashboard"
+          className="px-3.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 rounded-xl text-xs font-semibold transition-colors"
+        >
+          ← Dashboard
         </Link>
       </div>
 
       {error && (
-        <div className="bg-red-50 text-red-700 p-2.5 rounded border border-red-200 mb-3 text-xs">
-          {error}
+        <div className="bg-rose-500/10 text-rose-400 p-3 rounded-2xl border border-rose-500/20 mb-3 text-xs flex items-center gap-2">
+          <span>⚠️</span>
+          <span>{error}</span>
         </div>
       )}
 
-      {/* Message List Panel */}
-      <div className="flex-1 bg-white border border-gray-300 rounded p-4 overflow-y-auto space-y-4 mb-4 shadow-inner">
+      {/* Chat Messages Panel */}
+      <div className="flex-1 df-glass-card rounded-3xl p-6 overflow-y-auto space-y-4 mb-4 border-zinc-800">
         {messages.map((msg) => (
           <div
             key={msg.id}
-            className={`flex flex-col max-w-[85%] ${
+            className={`flex flex-col max-w-[80%] ${
               msg.sender === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'
             }`}
           >
-            <span className="text-[10px] text-gray-400 font-bold mb-0.5 uppercase tracking-wide">
+            <span className="text-[10px] text-zinc-500 font-bold mb-1 uppercase tracking-wider">
               {msg.sender === 'user' ? 'You' : 'DayFlow AI'}
             </span>
             <div
-              className={`p-3 rounded text-sm whitespace-pre-wrap leading-relaxed shadow-sm ${
+              className={`p-4 rounded-2xl text-xs whitespace-pre-wrap leading-relaxed shadow-md ${
                 msg.sender === 'user'
-                  ? 'bg-blue-600 text-white rounded-br-none'
-                  : 'bg-gray-100 text-gray-800 rounded-bl-none border border-gray-200'
+                  ? 'bg-zinc-100 text-zinc-950 font-medium rounded-br-none'
+                  : 'bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-bl-none'
               }`}
             >
               {msg.text}
             </div>
           </div>
         ))}
+
         {sending && (
-          <div className="mr-auto items-start max-w-[85%] flex flex-col">
-            <span className="text-[10px] text-gray-400 font-bold mb-0.5 uppercase tracking-wide">DayFlow AI</span>
-            <div className="p-3 rounded text-sm bg-gray-100 text-gray-400 rounded-bl-none border border-gray-200 italic shadow-sm">
+          <div className="mr-auto items-start max-w-[80%] flex flex-col">
+            <span className="text-[10px] text-zinc-500 font-bold mb-1 uppercase tracking-wider">DayFlow AI</span>
+            <div className="p-4 rounded-2xl text-xs bg-zinc-900 border border-zinc-800 text-zinc-400 rounded-bl-none italic flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
               Analyzing database context and generating response...
             </div>
           </div>
@@ -129,21 +150,35 @@ const AIAssistant = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Chat Form Input */}
+      {/* Quick Prompt Suggestions */}
+      <div className="flex flex-wrap gap-2 mb-3">
+        {quickPrompts.map((p, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => handleQuickPrompt(p)}
+            className="text-[11px] px-3 py-1 bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-zinc-400 hover:text-zinc-200 rounded-full transition-colors cursor-pointer"
+          >
+            {p}
+          </button>
+        ))}
+      </div>
+
+      {/* Composer Input */}
       <form onSubmit={handleSendMessage} className="flex gap-2">
         <input
           type="text"
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           disabled={sending}
-          className="flex-1 p-3 border border-gray-300 rounded focus:outline-none focus:border-gray-500 text-sm"
-          placeholder="Ask about your attendance or leave applications..."
+          className="flex-1 df-input py-3"
+          placeholder="Ask a question about your attendance, leaves, or company policies..."
           required
         />
         <button
           type="submit"
           disabled={sending || !inputText.trim()}
-          className="px-6 bg-gray-800 hover:bg-gray-700 text-white rounded font-bold text-sm disabled:bg-gray-300 disabled:cursor-not-allowed cursor-pointer transition-colors"
+          className="px-6 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 rounded-xl font-bold text-xs disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shadow-md hover:scale-105"
         >
           Send
         </button>
