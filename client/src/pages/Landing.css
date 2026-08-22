@@ -44,8 +44,40 @@
   }
 }
 
+@keyframes float-slow {
+  0% {
+    transform: translateY(0px) rotate(-6deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(-4deg);
+  }
+  100% {
+    transform: translateY(0px) rotate(-6deg);
+  }
+}
+
+@keyframes float-fast {
+  0% {
+    transform: translateY(0px) rotate(6deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(8deg);
+  }
+  100% {
+    transform: translateY(0px) rotate(6deg);
+  }
+}
+
 .animate-float {
   animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-slow {
+  animation: float-slow 7s ease-in-out infinite;
+}
+
+.animate-float-fast {
+  animation: float-fast 5s ease-in-out infinite;
 }
 
 /* CSS Glass 3D Sphere Placeholders */
