@@ -10,6 +10,13 @@ const Attendance = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Real-time live clock ticker
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const fetchAttendance = async () => {
     setLoading(true);
@@ -18,7 +25,7 @@ const Attendance = () => {
       const endpoint = user.role === 'Admin' ? 'all' : 'my';
       const response = await fetch(`${API_URL}/attendance/${endpoint}`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
       const data = await response.json();
@@ -28,6 +35,7 @@ const Attendance = () => {
         setError(data.message || 'Failed to fetch attendance records');
       }
     } catch (err) {
+      console.error('Error fetching attendance:', err);
       setError('Error connecting to server');
     } finally {
       setLoading(false);
@@ -35,11 +43,11 @@ const Attendance = () => {
   };
 
   const fetchTodayStatus = async () => {
-    if (user.role === 'Admin') return;
+    if (!user || !token || user.role === 'Admin') return;
     try {
       const response = await fetch(`${API_URL}/attendance/today`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
       const data = await response.json();
@@ -66,7 +74,7 @@ const Attendance = () => {
       const response = await fetch(`${API_URL}/attendance/check-in`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
       const data = await response.json();
@@ -92,7 +100,7 @@ const Attendance = () => {
       const response = await fetch(`${API_URL}/attendance/check-out`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
       const data = await response.json();
@@ -119,17 +127,84 @@ const Attendance = () => {
   const formatDate = (isoString) => {
     if (!isoString) return '';
     const date = new Date(isoString);
-    return date.toLocaleDateString([], { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+    return date.toLocaleDateString([], {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  const calculateDuration = (checkIn, checkOut) => {
+    if (!checkIn) return '--';
+    const start = new Date(checkIn);
+    const end = checkOut ? new Date(checkOut) : new Date();
+    const diffMs = end - start;
+    if (diffMs <= 0) return '0h 0m';
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    return `${hours}h ${minutes}m${!checkOut ? ' (In progress)' : ''}`;
+  };
+
+  const handleExportCSV = () => {
+    if (!records || records.length === 0) return;
+    const headers =
+      user.role === 'Admin'
+        ? ['Date', 'Employee ID', 'Name', 'Check In', 'Check Out', 'Status']
+        : ['Date', 'Check In', 'Check Out', 'Status'];
+
+    const rows = records.map((r) => {
+      const dateStr = formatDate(r.date);
+      const inStr = formatTime(r.checkIn);
+      const outStr = formatTime(r.checkOut);
+      const statusStr = r.status || 'Present';
+      if (user.role === 'Admin') {
+        return [
+          `"${dateStr}"`,
+          `"${r.user?.employeeId || ''}"`,
+          `"${r.user?.name || ''}"`,
+          `"${inStr}"`,
+          `"${outStr}"`,
+          `"${statusStr}"`,
+        ];
+      }
+      return [
+        `"${dateStr}"`,
+        `"${inStr}"`,
+        `"${outStr}"`,
+        `"${statusStr}"`,
+      ];
+    });
+
+    const csvContent =
+      'data:text/csv;charset=utf-8,' +
+      [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute(
+      'download',
+      `attendance_${user.role === 'Admin' ? 'all' : user.employeeId}_${Date.now()}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   if (!user) return null;
 
   return (
     <div className="container mx-auto px-6 py-8 space-y-8 max-w-5xl">
+      {/* Top Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="font-heading text-3xl font-bold text-white tracking-tight">Attendance Register</h1>
-          <p className="text-xs text-zinc-400 mt-1">Daily clock-in check registers and log audits</p>
+          <h1 className="font-heading text-3xl font-bold text-white tracking-tight">
+            Attendance Register
+          </h1>
+          <p className="text-xs text-zinc-400 mt-1">
+            Real-time daily clocking, duration calculations, and log audits
+          </p>
         </div>
         <Link
           to="/dashboard"
@@ -157,18 +232,20 @@ const Attendance = () => {
       {user.role === 'Employee' && (
         <div className="df-glass-card rounded-3xl p-6 md:p-8 border-zinc-800 relative overflow-hidden">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <span className="text-lg">⏱️</span>
-                <h2 className="font-heading text-lg font-bold text-white">Daily Clocking Actions</h2>
+                <h2 className="font-heading text-lg font-bold text-white">
+                  Daily Clocking Actions
+                </h2>
               </div>
-              
+
               {todayRecord ? (
-                <div className="text-xs text-zinc-300 space-y-1">
+                <div className="text-xs text-zinc-300 space-y-1.5">
                   <div className="flex items-center gap-2">
-                    <span className="text-zinc-500 font-semibold">Today's Status:</span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                      {todayRecord.status}
+                    <span className="text-zinc-400 font-medium">Today's Status:</span>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      {todayRecord.status || 'Present'}
                     </span>
                   </div>
                   <p className="text-zinc-400">
@@ -179,45 +256,98 @@ const Attendance = () => {
                       </span>
                     )}
                   </p>
+                  <div className="text-zinc-400 flex items-center gap-1.5 pt-0.5">
+                    <span>⏳</span>
+                    <span>
+                      Duration:{' '}
+                      <strong className="font-mono text-white">
+                        {calculateDuration(todayRecord.checkIn, todayRecord.checkOut)}
+                      </strong>
+                    </span>
+                  </div>
                 </div>
               ) : (
-                <p className="text-xs text-zinc-400 italic">You have not clocked in yet today.</p>
+                <p className="text-xs text-zinc-400 italic">
+                  You have not clocked in yet today.
+                </p>
               )}
             </div>
-            
-            <div className="flex space-x-3">
-              <button
-                onClick={handleCheckIn}
-                disabled={actionLoading || !!todayRecord}
-                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shadow-md shadow-emerald-600/20"
-              >
-                {actionLoading ? 'Clocking...' : 'Clock In'}
-              </button>
-              <button
-                onClick={handleCheckOut}
-                disabled={actionLoading || !todayRecord || !!todayRecord.checkOut}
-                className="px-6 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl text-xs disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shadow-md shadow-amber-600/20"
-              >
-                {actionLoading ? 'Clocking...' : 'Clock Out'}
-              </button>
+
+            {/* Live Clock + Actions */}
+            <div className="flex flex-col items-start md:items-end gap-4">
+              {/* Live Digital Clock */}
+              <div className="flex items-center space-x-2.5 bg-zinc-900 text-zinc-100 px-4 py-2 rounded-xl border border-zinc-800 shadow-sm">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                </span>
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-semibold leading-none">
+                    Live Time
+                  </span>
+                  <span className="font-mono text-sm sm:text-base font-bold tracking-wider text-emerald-400 mt-0.5">
+                    {currentTime.toLocaleTimeString('en-US', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit',
+                      hour12: true,
+                    })}
+                  </span>
+                </div>
+              </div>
+
+              {/* Clock Buttons */}
+              <div className="flex space-x-3">
+                <button
+                  onClick={handleCheckIn}
+                  disabled={actionLoading || !!todayRecord}
+                  className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shadow-md shadow-emerald-600/20"
+                >
+                  {actionLoading ? 'Clocking...' : 'Clock In'}
+                </button>
+                <button
+                  onClick={handleCheckOut}
+                  disabled={actionLoading || !todayRecord || !!todayRecord.checkOut}
+                  className="px-6 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl text-xs disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shadow-md shadow-amber-600/20"
+                >
+                  {actionLoading ? 'Clocking...' : 'Clock Out'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Logs Table */}
+      {/* Attendance Logs Table */}
       <div className="df-glass-card rounded-2xl p-6 border border-zinc-800">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="font-heading text-lg font-bold text-white">
-            {user.role === 'Admin' ? 'All Organization Logs' : 'My Log History'}
-          </h2>
-          <span className="text-xs text-zinc-500">{records.length} records logged</span>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <div>
+            <h2 className="font-heading text-lg font-bold text-white">
+              {user.role === 'Admin' ? 'All Organization Logs' : 'My Log History'}
+            </h2>
+            <span className="text-xs text-zinc-500">
+              {records.length} records logged
+            </span>
+          </div>
+
+          <button
+            onClick={handleExportCSV}
+            disabled={records.length === 0}
+            className="px-3 py-1.5 bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white rounded-xl text-xs font-medium inline-flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-sm"
+          >
+            <span>📥</span>
+            Export CSV
+          </button>
         </div>
 
         {loading ? (
-          <p className="text-zinc-500 text-xs py-4 text-center">Loading attendance logs...</p>
+          <p className="text-zinc-500 text-xs py-4 text-center">
+            Loading attendance logs...
+          </p>
         ) : records.length === 0 ? (
-          <p className="text-zinc-500 text-xs italic py-4 text-center">No attendance records found.</p>
+          <p className="text-zinc-500 text-xs italic py-4 text-center">
+            No attendance records found.
+          </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
@@ -232,30 +362,49 @@ const Attendance = () => {
                   )}
                   <th className="pb-3 px-3 font-mono">Clock In</th>
                   <th className="pb-3 px-3 font-mono">Clock Out</th>
+                  <th className="pb-3 px-3 font-mono">Duration</th>
                   <th className="pb-3 px-3 text-right">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-850">
                 {records.map((record) => (
-                  <tr key={record._id} className="hover:bg-zinc-800/30 transition-colors">
+                  <tr
+                    key={record._id}
+                    className="hover:bg-zinc-800/30 transition-colors"
+                  >
                     <td className="py-3 px-3 font-medium text-zinc-200">
                       {formatDate(record.date)}
                     </td>
                     {user.role === 'Admin' && (
                       <>
-                        <td className="py-3 px-3 font-mono text-zinc-400">{record.user?.employeeId || 'N/A'}</td>
-                        <td className="py-3 px-3 font-bold text-white">{record.user?.name || 'N/A'}</td>
+                        <td className="py-3 px-3 font-mono text-zinc-400">
+                          {record.user?.employeeId || 'N/A'}
+                        </td>
+                        <td className="py-3 px-3 font-bold text-white">
+                          {record.user?.name || 'N/A'}
+                        </td>
                       </>
                     )}
-                    <td className="py-3 px-3 font-mono text-zinc-300">{formatTime(record.checkIn)}</td>
-                    <td className="py-3 px-3 font-mono text-zinc-300">{formatTime(record.checkOut)}</td>
+                    <td className="py-3 px-3 font-mono text-zinc-300">
+                      {formatTime(record.checkIn)}
+                    </td>
+                    <td className="py-3 px-3 font-mono text-zinc-300">
+                      {formatTime(record.checkOut)}
+                    </td>
+                    <td className="py-3 px-3 font-mono text-zinc-300">
+                      {calculateDuration(record.checkIn, record.checkOut)}
+                    </td>
                     <td className="py-3 px-3 text-right">
-                      <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                        record.status === 'Present' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                        record.status === 'Absent' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' :
-                        'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                      }`}>
-                        {record.status}
+                      <span
+                        className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                          record.status === 'Present'
+                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                            : record.status === 'Absent'
+                            ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                            : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                        }`}
+                      >
+                        {record.status || 'Present'}
                       </span>
                     </td>
                   </tr>

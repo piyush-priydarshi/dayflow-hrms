@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth, API_URL } from '../context/AuthContext';
+import DatePicker from '../components/DatePicker';
 
 const Leave = () => {
   const { user, token } = useAuth();
@@ -23,7 +24,7 @@ const Leave = () => {
       const endpoint = user.role === 'Admin' ? 'all' : 'my';
       const response = await fetch(`${API_URL}/leaves/${endpoint}`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
       const data = await response.json();
@@ -66,7 +67,7 @@ const Leave = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ leaveType, startDate, endDate, remarks }),
       });
@@ -74,11 +75,10 @@ const Leave = () => {
       const data = await response.json();
       if (response.ok) {
         setSuccess('Leave request submitted successfully!');
-        // Reset form
         setStartDate('');
         setEndDate('');
         setRemarks('');
-        fetchLeaves(); // Refresh list
+        fetchLeaves();
       } else {
         setError(data.message || 'Failed to submit leave request');
       }
@@ -97,14 +97,14 @@ const Leave = () => {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ status }),
       });
       const data = await response.json();
       if (response.ok) {
         setSuccess(`Request has been ${status.toLowerCase()}!`);
-        fetchLeaves(); // Refresh list
+        fetchLeaves();
       } else {
         setError(data.message || 'Failed to update request');
       }
@@ -122,119 +122,134 @@ const Leave = () => {
   if (!user) return null;
 
   return (
-    <div className="container mx-auto p-6 max-w-5xl">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Leave Management</h1>
-        <Link to="/dashboard" className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded text-sm font-medium">
-          Back to Dashboard
+    <div className="container mx-auto px-6 py-8 space-y-8 max-w-5xl">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="font-heading text-3xl font-bold text-white tracking-tight">Leave Management</h1>
+          <p className="text-xs text-zinc-400 mt-1">Application requests, balance metrics, and approval queue</p>
+        </div>
+        <Link
+          to="/dashboard"
+          className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-200 rounded-xl text-xs font-semibold transition-colors"
+        >
+          ← Dashboard
         </Link>
       </div>
 
       {success && (
-        <div className="bg-green-50 text-green-700 p-3 rounded border border-green-200 mb-6 text-sm">
-          {success}
+        <div className="bg-emerald-500/10 text-emerald-400 p-4 rounded-2xl border border-emerald-500/20 text-xs flex items-center gap-2">
+          <span>✓</span>
+          <span>{success}</span>
         </div>
       )}
 
       {error && (
-        <div className="bg-red-50 text-red-700 p-3 rounded border border-red-200 mb-6 text-sm">
-          {error}
+        <div className="bg-rose-500/10 text-rose-400 p-4 rounded-2xl border border-rose-500/20 text-xs flex items-center gap-2">
+          <span>⚠️</span>
+          <span>{error}</span>
         </div>
       )}
 
       {user.role === 'Employee' ? (
-        // EMPLOYEE VIEW (Application Form + History Table)
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Apply Form Card */}
-          <div className="bg-white p-6 rounded border border-gray-300 shadow-sm">
-            <h2 className="text-lg font-bold text-gray-800 mb-4">Request Leave</h2>
-            <form onSubmit={handleApplyLeave} className="space-y-4 text-sm">
+          <div className="df-glass-card rounded-3xl p-6 border-zinc-800 h-fit">
+            <h2 className="font-heading text-lg font-bold text-white mb-4 pb-2 border-b border-zinc-800">
+              Request Time Off
+            </h2>
+            <form onSubmit={handleApplyLeave} className="space-y-4 text-xs">
               <div>
-                <label className="block text-gray-700 font-medium mb-1">Leave Type</label>
+                <label className="block text-zinc-300 font-semibold mb-1.5">Leave Type</label>
                 <select
                   value={leaveType}
                   onChange={(e) => setLeaveType(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded bg-white"
+                  className="w-full df-input cursor-pointer"
                 >
-                  <option value="Paid">Paid Leave</option>
-                  <option value="Sick">Sick Leave</option>
-                  <option value="Unpaid">Unpaid Leave</option>
+                  <option value="Paid" className="bg-zinc-900 text-white">Paid Leave</option>
+                  <option value="Sick" className="bg-zinc-900 text-white">Sick Leave</option>
+                  <option value="Unpaid" className="bg-zinc-900 text-white">Unpaid Leave</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-gray-700 font-medium mb-1">Start Date</label>
-                <input
-                  type="date"
+                <label className="block text-zinc-300 font-semibold mb-1.5">Start Date</label>
+                <DatePicker
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded"
+                  onChange={(date) => {
+                    setStartDate(date);
+                    if (endDate && date > endDate) {
+                      setEndDate('');
+                    }
+                  }}
+                  placeholder="Select start date"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-gray-700 font-medium mb-1">End Date</label>
-                <input
-                  type="date"
+                <label className="block text-zinc-300 font-semibold mb-1.5">End Date</label>
+                <DatePicker
                   value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded"
+                  onChange={(date) => setEndDate(date)}
+                  placeholder="Select end date"
+                  minDate={startDate}
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-gray-700 font-medium mb-1">Remarks / Reason</label>
+                <label className="block text-zinc-300 font-semibold mb-1.5">Reason / Remarks</label>
                 <textarea
                   value={remarks}
                   onChange={(e) => setRemarks(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded h-20"
-                  placeholder="Reason for requesting leave"
+                  className="w-full df-input h-20"
+                  placeholder="State reason for absence..."
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={formLoading}
-                className="w-full py-2 bg-gray-800 hover:bg-gray-700 text-white rounded font-medium transition-colors cursor-pointer"
+                className="w-full py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 font-bold rounded-xl text-xs transition-all cursor-pointer shadow-sm disabled:opacity-40"
               >
-                {formLoading ? 'Submitting...' : 'Apply Request'}
+                {formLoading ? 'Submitting...' : 'Submit Request'}
               </button>
             </form>
           </div>
 
           {/* History list */}
-          <div className="bg-white p-6 rounded border border-gray-300 shadow-sm md:col-span-2">
-            <h2 className="text-lg font-bold text-gray-800 mb-4">My Leave History</h2>
+          <div className="df-glass-card rounded-3xl p-6 border-zinc-800 md:col-span-2">
+            <h2 className="font-heading text-lg font-bold text-white mb-4 pb-2 border-b border-zinc-800">
+              My Leave Applications
+            </h2>
             {loading ? (
-              <p className="text-gray-500 text-sm">Loading logs...</p>
+              <p className="text-zinc-500 text-xs py-4 text-center">Loading applications...</p>
             ) : leaves.length === 0 ? (
-              <p className="text-gray-500 text-sm italic">No leave applications found.</p>
+              <p className="text-zinc-500 text-xs italic py-4 text-center">No leave applications recorded.</p>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-sm">
+                <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-gray-100 border-b border-gray-300">
-                      <th className="p-3 text-gray-700 font-bold">Leave Type</th>
-                      <th className="p-3 text-gray-700 font-bold">Start Date</th>
-                      <th className="p-3 text-gray-700 font-bold">End Date</th>
-                      <th className="p-3 text-gray-700 font-bold">Remarks</th>
-                      <th className="p-3 text-gray-700 font-bold">Status</th>
+                    <tr className="border-b border-zinc-800 text-zinc-400 font-semibold uppercase tracking-wider text-[10px]">
+                      <th className="pb-3 px-3">Type</th>
+                      <th className="pb-3 px-3">Start Date</th>
+                      <th className="pb-3 px-3">End Date</th>
+                      <th className="pb-3 px-3">Remarks</th>
+                      <th className="pb-3 px-3 text-right">Status</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-zinc-850">
                     {leaves.map((leave) => (
-                      <tr key={leave._id} className="border-b border-gray-200 hover:bg-gray-50">
-                        <td className="p-3 text-gray-800 font-medium">{leave.leaveType}</td>
-                        <td className="p-3 text-gray-800">{formatDate(leave.startDate)}</td>
-                        <td className="p-3 text-gray-800">{formatDate(leave.endDate)}</td>
-                        <td className="p-3 text-gray-800 max-w-xs truncate">{leave.remarks || '--'}</td>
-                        <td className="p-3">
-                          <span className={`inline-block text-xs font-semibold px-2 py-0.5 rounded border ${
-                            leave.status === 'Approved' ? 'bg-green-50 text-green-700 border-green-200' :
-                            leave.status === 'Rejected' ? 'bg-red-50 text-red-700 border-red-200' :
-                            'bg-yellow-50 text-yellow-700 border-yellow-200'
+                      <tr key={leave._id} className="hover:bg-zinc-800/30 transition-colors">
+                        <td className="py-3 px-3 font-semibold text-white">{leave.leaveType}</td>
+                        <td className="py-3 px-3 text-zinc-300">{formatDate(leave.startDate)}</td>
+                        <td className="py-3 px-3 text-zinc-300">{formatDate(leave.endDate)}</td>
+                        <td className="py-3 px-3 text-zinc-400 max-w-xs truncate">{leave.remarks || '--'}</td>
+                        <td className="py-3 px-3 text-right">
+                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                            leave.status === 'Approved' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                            leave.status === 'Rejected' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' :
+                            'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                           }`}>
                             {leave.status}
                           </span>
@@ -248,64 +263,66 @@ const Leave = () => {
           </div>
         </div>
       ) : (
-        // ADMIN VIEW (Approvals Listing)
-        <div className="bg-white p-6 rounded border border-gray-300 shadow-sm">
-          <h2 className="text-lg font-bold text-gray-800 mb-4">Pending and Past Approvals</h2>
+        /* ADMIN VIEW */
+        <div className="df-glass-card rounded-3xl p-6 border-zinc-800">
+          <h2 className="font-heading text-lg font-bold text-white mb-4 pb-2 border-b border-zinc-800">
+            Pending & Reviewed Requests
+          </h2>
           {loading ? (
-            <p className="text-gray-500">Loading leave requests...</p>
+            <p className="text-zinc-500 text-xs py-4 text-center">Loading requests...</p>
           ) : leaves.length === 0 ? (
-            <p className="text-gray-500 italic">No leave requests found.</p>
+            <p className="text-zinc-500 text-xs italic py-4 text-center">No leave requests found.</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-sm">
+              <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="bg-gray-100 border-b border-gray-300">
-                    <th className="p-3 text-gray-700 font-bold">Emp ID</th>
-                    <th className="p-3 text-gray-700 font-bold">Employee</th>
-                    <th className="p-3 text-gray-700 font-bold">Type</th>
-                    <th className="p-3 text-gray-700 font-bold">Duration</th>
-                    <th className="p-3 text-gray-700 font-bold">Remarks</th>
-                    <th className="p-3 text-gray-700 font-bold">Status</th>
-                    <th className="p-3 text-gray-700 font-bold text-center">Action Actions</th>
+                  <tr className="border-b border-zinc-800 text-zinc-400 font-semibold uppercase tracking-wider text-[10px]">
+                    <th className="pb-3 px-3">Emp ID</th>
+                    <th className="pb-3 px-3">Employee Name</th>
+                    <th className="pb-3 px-3">Type</th>
+                    <th className="pb-3 px-3">Duration</th>
+                    <th className="pb-3 px-3">Remarks</th>
+                    <th className="pb-3 px-3">Status</th>
+                    <th className="pb-3 px-3 text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-zinc-850">
                   {leaves.map((leave) => (
-                    <tr key={leave._id} className="border-b border-gray-200 hover:bg-gray-50">
-                      <td className="p-3 text-gray-800">{leave.user?.employeeId || 'N/A'}</td>
-                      <td className="p-3 text-gray-800 font-medium">{leave.user?.name || 'N/A'}</td>
-                      <td className="p-3 text-gray-800">{leave.leaveType}</td>
-                      <td className="p-3 text-gray-800">
+                    <tr key={leave._id} className="hover:bg-zinc-800/30 transition-colors">
+                      <td className="py-3 px-3 font-mono text-zinc-400">{leave.user?.employeeId || 'N/A'}</td>
+                      <td className="py-3 px-3 font-bold text-white">{leave.user?.name || 'N/A'}</td>
+                      <td className="py-3 px-3 text-zinc-300">{leave.leaveType}</td>
+                      <td className="py-3 px-3 text-zinc-300">
                         {formatDate(leave.startDate)} - {formatDate(leave.endDate)}
                       </td>
-                      <td className="p-3 text-gray-800 max-w-xs truncate">{leave.remarks || '--'}</td>
-                      <td className="p-3">
-                        <span className={`inline-block text-xs font-semibold px-2 py-0.5 rounded border ${
-                          leave.status === 'Approved' ? 'bg-green-50 text-green-700 border-green-200' :
-                          leave.status === 'Rejected' ? 'bg-red-50 text-red-700 border-red-200' :
-                          'bg-yellow-50 text-yellow-700 border-yellow-200'
+                      <td className="py-3 px-3 text-zinc-400 max-w-xs truncate">{leave.remarks || '--'}</td>
+                      <td className="py-3 px-3">
+                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                          leave.status === 'Approved' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                          leave.status === 'Rejected' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' :
+                          'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                         }`}>
                           {leave.status}
                         </span>
                       </td>
-                      <td className="p-3 text-center space-x-2">
+                      <td className="py-3 px-3 text-right space-x-2">
                         {leave.status === 'Pending' ? (
                           <>
                             <button
                               onClick={() => handleUpdateStatus(leave._id, 'Approved')}
-                              className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded cursor-pointer"
+                              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold rounded-lg cursor-pointer transition-colors shadow-sm"
                             >
                               Approve
                             </button>
                             <button
                               onClick={() => handleUpdateStatus(leave._id, 'Rejected')}
-                              className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded cursor-pointer"
+                              className="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold rounded-lg cursor-pointer transition-colors shadow-sm"
                             >
                               Reject
                             </button>
                           </>
                         ) : (
-                          <span className="text-gray-400 text-xs italic">Reviewed</span>
+                          <span className="text-zinc-500 text-[11px] italic">Reviewed</span>
                         )}
                       </td>
                     </tr>
