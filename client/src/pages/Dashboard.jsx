@@ -19,6 +19,7 @@ const Dashboard = () => {
             },
           });
           const data = await response.json();
+
           if (response.ok) {
             setProfiles(data.profiles || []);
           } else {
@@ -30,6 +31,7 @@ const Dashboard = () => {
           setLoading(false);
         }
       };
+
       fetchProfiles();
     }
   }, [user, token]);
@@ -38,29 +40,50 @@ const Dashboard = () => {
 
   return (
     <div className="container mx-auto p-6">
+
       {/* Welcome Banner */}
       <div className="bg-white p-6 rounded border border-gray-300 mb-8 shadow-sm">
-        <h1 className="text-3xl font-bold text-gray-800">Welcome to Dayflow, {user.name}!</h1>
+        <h1 className="text-3xl font-bold text-gray-800">
+          Welcome to Dayflow, {user.name}!
+        </h1>
+
         <p className="text-gray-600 mt-2">
-          Logged in as: <span className="font-semibold text-gray-800">{user.role}</span> | Employee ID:{' '}
-          <span className="font-semibold text-gray-800">{user.employeeId}</span>
+          Logged in as:{' '}
+          <span className="font-semibold text-gray-800">
+            {user.role}
+          </span>{' '}
+          | Employee ID:{' '}
+          <span className="font-semibold text-gray-800">
+            {user.employeeId}
+          </span>
         </p>
       </div>
 
       {user.role === 'Admin' ? (
+
         // ADMIN DASHBOARD
         <div className="space-y-8">
+
           <div>
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Admin Quick Links</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">
+              Admin Quick Links
+            </h2>
+
+            {/* Admin cards - now 4 columns */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+
               {/* Attendance Card */}
               <div className="bg-white p-6 rounded border border-gray-300 shadow-sm flex flex-col justify-between">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-800">Attendance Records</h3>
+                  <h3 className="text-lg font-bold text-gray-800">
+                    Attendance Records
+                  </h3>
+
                   <p className="text-sm text-gray-600 mt-2 mb-4">
                     Monitor daily check-ins, check-outs, and logs for all employees.
                   </p>
                 </div>
+
                 <Link
                   to="/attendance"
                   className="inline-block text-center py-2 px-4 bg-gray-850 bg-gray-800 hover:bg-gray-700 text-white rounded text-sm font-medium transition-colors"
@@ -72,11 +95,15 @@ const Dashboard = () => {
               {/* Leave Approvals Card */}
               <div className="bg-white p-6 rounded border border-gray-300 shadow-sm flex flex-col justify-between">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-800">Leave Approvals</h3>
+                  <h3 className="text-lg font-bold text-gray-800">
+                    Leave Approvals
+                  </h3>
+
                   <p className="text-sm text-gray-600 mt-2 mb-4">
                     Review incoming leave requests and approve or reject them.
                   </p>
                 </div>
+
                 <Link
                   to="/leave"
                   className="inline-block text-center py-2 px-4 bg-gray-800 hover:bg-gray-700 text-white rounded text-sm font-medium transition-colors"
@@ -88,11 +115,15 @@ const Dashboard = () => {
               {/* Payroll Configuration Card */}
               <div className="bg-white p-6 rounded border border-gray-300 shadow-sm flex flex-col justify-between">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-800">Payroll Management</h3>
+                  <h3 className="text-lg font-bold text-gray-800">
+                    Payroll Management
+                  </h3>
+
                   <p className="text-sm text-gray-600 mt-2 mb-4">
                     Update base salary, allowances, and calculate net employee earnings.
                   </p>
                 </div>
+
                 <Link
                   to="/payroll"
                   className="inline-block text-center py-2 px-4 bg-gray-800 hover:bg-gray-700 text-white rounded text-sm font-medium transition-colors"
@@ -100,76 +131,160 @@ const Dashboard = () => {
                   Configure Payroll
                 </Link>
               </div>
+
+              {/* AI Assistant Card */}
+              <div className="bg-white p-6 rounded border border-gray-300 shadow-sm flex flex-col justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800">
+                    AI HR Assistant
+                  </h3>
+
+                  <p className="text-sm text-gray-600 mt-2 mb-4">
+                    Ask natural-language questions about leave, attendance, and payroll data.
+                  </p>
+                </div>
+
+                <Link
+                  to="/ai-assistant"
+                  className="inline-block text-center py-2 px-4 bg-gray-800 hover:bg-gray-700 text-white rounded text-sm font-medium transition-colors"
+                >
+                  Open Assistant
+                </Link>
+              </div>
+
             </div>
           </div>
 
           {/* Employee Directory Section */}
           <div className="bg-white p-6 rounded border border-gray-300 shadow-sm">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Employee Directory</h2>
+
+            <h2 className="text-xl font-bold text-gray-800 mb-4">
+              Employee Directory
+            </h2>
+
             {loading ? (
-              <p className="text-gray-500">Loading directory...</p>
+              <p className="text-gray-500">
+                Loading directory...
+              </p>
             ) : error ? (
-              <p className="text-red-600">{error}</p>
+              <p className="text-red-600">
+                {error}
+              </p>
             ) : profiles.length === 0 ? (
-              <p className="text-gray-500">No employees registered yet.</p>
+              <p className="text-gray-500">
+                No employees registered yet.
+              </p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
+
                   <thead>
                     <tr className="bg-gray-100 border-b border-gray-300">
-                      <th className="p-3 text-sm font-bold text-gray-700">Emp ID</th>
-                      <th className="p-3 text-sm font-bold text-gray-700">Name</th>
-                      <th className="p-3 text-sm font-bold text-gray-700">Email</th>
-                      <th className="p-3 text-sm font-bold text-gray-700">Department</th>
-                      <th className="p-3 text-sm font-bold text-gray-700">Designation</th>
-                      <th className="p-3 text-sm font-bold text-gray-700">Actions</th>
+                      <th className="p-3 text-sm font-bold text-gray-700">
+                        Emp ID
+                      </th>
+
+                      <th className="p-3 text-sm font-bold text-gray-700">
+                        Name
+                      </th>
+
+                      <th className="p-3 text-sm font-bold text-gray-700">
+                        Email
+                      </th>
+
+                      <th className="p-3 text-sm font-bold text-gray-700">
+                        Department
+                      </th>
+
+                      <th className="p-3 text-sm font-bold text-gray-700">
+                        Designation
+                      </th>
+
+                      <th className="p-3 text-sm font-bold text-gray-700">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
+
                   <tbody>
                     {profiles.map((profile) => (
-                      <tr key={profile._id} className="border-b border-gray-200 hover:bg-gray-50">
+                      <tr
+                        key={profile._id}
+                        className="border-b border-gray-200 hover:bg-gray-50"
+                      >
                         <td className="p-3 text-sm text-gray-800 font-medium">
                           {profile.user?.employeeId || 'N/A'}
                         </td>
-                        <td className="p-3 text-sm text-gray-800">{profile.user?.name || 'N/A'}</td>
-                        <td className="p-3 text-sm text-gray-800">{profile.user?.email || 'N/A'}</td>
-                        <td className="p-3 text-sm text-gray-800">{profile.department}</td>
-                        <td className="p-3 text-sm text-gray-800">{profile.designation}</td>
+
+                        <td className="p-3 text-sm text-gray-800">
+                          {profile.user?.name || 'N/A'}
+                        </td>
+
+                        <td className="p-3 text-sm text-gray-800">
+                          {profile.user?.email || 'N/A'}
+                        </td>
+
+                        <td className="p-3 text-sm text-gray-800">
+                          {profile.department}
+                        </td>
+
+                        <td className="p-3 text-sm text-gray-800">
+                          {profile.designation}
+                        </td>
+
                         <td className="p-3 text-sm space-x-2">
+
                           <Link
                             to={`/profile/${profile.user?._id}`}
                             className="inline-block px-3 py-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-semibold rounded"
                           >
                             Edit Profile
                           </Link>
+
                           <Link
                             to={`/payroll`}
                             className="inline-block px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded border border-gray-300"
                           >
                             Payroll
                           </Link>
+
                         </td>
                       </tr>
                     ))}
                   </tbody>
+
                 </table>
               </div>
             )}
+
           </div>
+
         </div>
+
       ) : (
+
         // EMPLOYEE DASHBOARD
         <div>
-          <h2 className="text-xl font-bold text-gray-800 mb-4">My Employee Portal</h2>
+
+          <h2 className="text-xl font-bold text-gray-800 mb-4">
+            My Employee Portal
+          </h2>
+
+          {/* Employee cards - 4 columns */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+
             {/* My Profile */}
             <div className="bg-white p-6 rounded border border-gray-300 shadow-sm flex flex-col justify-between">
               <div>
-                <h3 className="text-lg font-bold text-gray-800">My Profile</h3>
+                <h3 className="text-lg font-bold text-gray-800">
+                  My Profile
+                </h3>
+
                 <p className="text-sm text-gray-600 mt-2 mb-4">
                   View and update your personal and contact details.
                 </p>
               </div>
+
               <Link
                 to={`/profile/${user._id}`}
                 className="inline-block text-center py-2 px-4 bg-gray-800 hover:bg-gray-700 text-white rounded text-sm font-medium transition-colors"
@@ -181,11 +296,15 @@ const Dashboard = () => {
             {/* Attendance */}
             <div className="bg-white p-6 rounded border border-gray-300 shadow-sm flex flex-col justify-between">
               <div>
-                <h3 className="text-lg font-bold text-gray-800">My Attendance</h3>
+                <h3 className="text-lg font-bold text-gray-800">
+                  My Attendance
+                </h3>
+
                 <p className="text-sm text-gray-600 mt-2 mb-4">
                   Check-in / check-out daily and view your working logs.
                 </p>
               </div>
+
               <Link
                 to="/attendance"
                 className="inline-block text-center py-2 px-4 bg-gray-800 hover:bg-gray-700 text-white rounded text-sm font-medium transition-colors"
@@ -197,11 +316,15 @@ const Dashboard = () => {
             {/* Leave */}
             <div className="bg-white p-6 rounded border border-gray-300 shadow-sm flex flex-col justify-between">
               <div>
-                <h3 className="text-lg font-bold text-gray-800">Leave Requests</h3>
+                <h3 className="text-lg font-bold text-gray-800">
+                  Leave Requests
+                </h3>
+
                 <p className="text-sm text-gray-600 mt-2 mb-4">
                   Submit a leave application and review your approval status.
                 </p>
               </div>
+
               <Link
                 to="/leave"
                 className="inline-block text-center py-2 px-4 bg-gray-800 hover:bg-gray-700 text-white rounded text-sm font-medium transition-colors"
@@ -213,11 +336,15 @@ const Dashboard = () => {
             {/* Payroll */}
             <div className="bg-white p-6 rounded border border-gray-300 shadow-sm flex flex-col justify-between">
               <div>
-                <h3 className="text-lg font-bold text-gray-800">My Salary Slip</h3>
+                <h3 className="text-lg font-bold text-gray-800">
+                  My Salary Slip
+                </h3>
+
                 <p className="text-sm text-gray-600 mt-2 mb-4">
                   Read-only access to your structured monthly payroll allowances.
                 </p>
               </div>
+
               <Link
                 to="/payroll"
                 className="inline-block text-center py-2 px-4 bg-gray-800 hover:bg-gray-700 text-white rounded text-sm font-medium transition-colors"
@@ -225,9 +352,32 @@ const Dashboard = () => {
                 View Payroll
               </Link>
             </div>
+
+            {/* AI Assistant */}
+            <div className="bg-white p-6 rounded border border-gray-300 shadow-sm flex flex-col justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-gray-800">
+                  AI Assistant
+                </h3>
+
+                <p className="text-sm text-gray-600 mt-2 mb-4">
+                  Ask about your leave balance, attendance, or salary details.
+                </p>
+              </div>
+
+              <Link
+                to="/ai-assistant"
+                className="inline-block text-center py-2 px-4 bg-gray-800 hover:bg-gray-700 text-white rounded text-sm font-medium transition-colors"
+              >
+                Ask Assistant
+              </Link>
+            </div>
+
           </div>
+
         </div>
       )}
+
     </div>
   );
 };
