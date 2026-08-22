@@ -1,32 +1,57 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, API_URL } from '../context/AuthContext';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    
-    if (!email || !password) {
-      setError('Please fill in all fields');
+
+    if (!email.trim() || !password) {
+      setError('Please fill in both email and password');
       return;
     }
 
     setLoading(true);
-    const result = await login(email, password);
-    setLoading(false);
 
-    if (result.success) {
-      navigate('/dashboard');
-    } else {
-      setError(result.message || 'Login failed');
+    try {
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || 'Login failed');
+      } else {
+        localStorage.setItem('token', data.token);
+        await login(email.trim().toLowerCase(), password);
+
+        if (data.user?.role === 'Admin') {
+          navigate('/admin-dashboard');
+        } else {
+          navigate('/dashboard');
+        }
+      }
+    } catch (err) {
+      setError('Network error: Unable to connect to server');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -67,7 +92,7 @@ const Login = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2 bg-gray-850 bg-gray-800 hover:bg-gray-700 text-white rounded font-medium transition-colors cursor-pointer disabled:bg-gray-400"
+            className="w-full py-2 bg-gray-800 hover:bg-gray-700 text-white rounded font-medium transition-colors cursor-pointer disabled:bg-gray-400"
           >
             {loading ? 'Logging in...' : 'Log In'}
           </button>

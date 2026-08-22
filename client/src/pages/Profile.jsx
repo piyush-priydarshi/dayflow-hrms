@@ -6,6 +6,7 @@ const Profile = () => {
   const { userId } = useParams();
   const { user, token } = useAuth();
   const [profile, setProfile] = useState(null);
+  const [payroll, setPayroll] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -29,13 +30,13 @@ const Profile = () => {
       try {
         const response = await fetch(`${API_URL}/profiles/${userId}`, {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
         });
         const data = await response.json();
         if (response.ok) {
           setProfile(data.profile);
-          // Pre-populate forms
+          setPayroll(data.payroll);
           setName(data.profile.user?.name || '');
           setPhone(data.profile.phone || '');
           setAddress(data.profile.address || '');
@@ -61,21 +62,44 @@ const Profile = () => {
     }
   }, [userId, token]);
 
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate image file type
+    if (!file.type.startsWith('image/')) {
+      setError('Please select a valid image file');
+      return;
+    }
+
+    // Convert file to Base64 Data URL for immediate preview and persistent storage
+    const reader = new FileReader();
+    reader.onload = () => {
+      setProfilePicture(reader.result);
+    };
+    reader.onerror = () => {
+      setError('Failed to read image file');
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleUpdate = async (e) => {
     e.preventDefault();
     setError('');
     setSuccessMsg('');
 
-    const bodyData = user.role === 'Admin' 
+    const isAdmin = user?.role === 'Admin';
+    const endpoint = isAdmin ? `${API_URL}/profiles/admin/${userId}` : `${API_URL}/profiles/${userId}`;
+    const bodyData = isAdmin 
       ? { name, phone, address, department, designation, joiningDate, profilePicture, documents }
-      : { phone, address, documents };
+      : { phone, address, profilePicture, documents };
 
     try {
-      const response = await fetch(`${API_URL}/profiles/${userId}`, {
+      const response = await fetch(endpoint, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(bodyData),
       });
@@ -99,8 +123,6 @@ const Profile = () => {
     const updatedDocs = [...documents, newDocumentUrl];
     setDocuments(updatedDocs);
     setNewDocumentUrl('');
-    
-    // Save document addition immediately
     saveDocuments(updatedDocs);
   };
 
@@ -118,7 +140,7 @@ const Profile = () => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ documents: updatedDocs }),
       });
@@ -135,7 +157,11 @@ const Profile = () => {
   };
 
   if (loading) {
-    return <div className="container mx-auto p-6"><p className="text-gray-500">Loading profile...</p></div>;
+    return (
+      <div className="container mx-auto p-6">
+        <p className="text-gray-500">Loading profile...</p>
+      </div>
+    );
   }
 
   if (error && !profile) {
@@ -145,13 +171,17 @@ const Profile = () => {
           <p className="font-bold">Error</p>
           <p>{error}</p>
         </div>
-        <Link to="/dashboard" className="text-blue-600 underline mt-4 inline-block">Back to Dashboard</Link>
+        <Link to="/dashboard" className="text-blue-600 underline mt-4 inline-block">
+          Back to Dashboard
+        </Link>
       </div>
     );
   }
 
-  const isAdmin = user.role === 'Admin';
-  
+  const isOwner = user?._id === userId;
+  const isAdmin = user?.role === 'Admin';
+  const canEdit = isOwner || isAdmin;
+
   return (
     <div className="container mx-auto p-6 max-w-4xl">
       <div className="flex justify-between items-center mb-6">
@@ -181,7 +211,7 @@ const Profile = () => {
               <img src={profile.profilePicture} alt={profile.user?.name} className="w-full h-full object-cover" />
             ) : (
               <span className="text-3xl text-gray-400 font-bold">
-                {profile.user?.name ? profile.user.name.charAt(0).toUpperCase() : '?' }
+                {profile.user?.name ? profile.user.name.charAt(0).toUpperCase() : '?'}
               </span>
             )}
           </div>
@@ -198,199 +228,261 @@ const Profile = () => {
         </div>
 
         {/* Edit Form / Details view */}
-        <div className="bg-white p-6 rounded border border-gray-300 shadow-sm md:col-span-2">
-          <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-3">
-            <h3 className="text-lg font-bold text-gray-800">Profile Details</h3>
-            {!isEditing && (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="px-3 py-1 bg-gray-800 hover:bg-gray-700 text-white rounded text-sm cursor-pointer"
-              >
-                Edit Fields
-              </button>
-            )}
-          </div>
+        <div className="bg-white p-6 rounded border border-gray-300 shadow-sm md:col-span-2 space-y-6">
+          <div>
+            <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-3">
+              <h3 className="text-lg font-bold text-gray-800">Profile Details</h3>
+              {canEdit && !isEditing && (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="px-3 py-1 bg-gray-800 hover:bg-gray-700 text-white rounded text-sm cursor-pointer"
+                >
+                  Edit Fields
+                </button>
+              )}
+            </div>
 
-          {isEditing ? (
-            <form onSubmit={handleUpdate} className="space-y-4 text-sm">
-              {isAdmin && (
-                <>
+            {isEditing ? (
+              <form onSubmit={handleUpdate} className="space-y-4 text-sm">
+                {isAdmin && (
+                  <>
+                    <div>
+                      <label className="block text-gray-700 font-medium mb-1">Full Name (Admin Only)</label>
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-700 font-medium mb-1">Department (Admin Only)</label>
+                      <input
+                        type="text"
+                        value={department}
+                        onChange={(e) => setDepartment(e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-700 font-medium mb-1">Designation (Admin Only)</label>
+                      <input
+                        type="text"
+                        value={designation}
+                        onChange={(e) => setDesignation(e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-700 font-medium mb-1">Joining Date (Admin Only)</label>
+                      <input
+                        type="date"
+                        value={joiningDate}
+                        onChange={(e) => setJoiningDate(e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded"
+                      />
+                    </div>
+                  </>
+                )}
+
+                <div>
+                  <label className="block text-gray-700 font-medium mb-1">Contact Phone</label>
+                  <input
+                    type="text"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded"
+                    placeholder="+1234567890"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-gray-700 font-medium mb-1">Home Address</label>
+                  <textarea
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded h-20"
+                    placeholder="Street, City, Country"
+                  />
+                </div>
+
+                {/* Profile Photo: Upload File or specify URL */}
+                <div className="p-3 bg-gray-50 border border-gray-200 rounded space-y-2">
+                  <label className="block text-gray-700 font-medium">Profile Photo</label>
+                  
                   <div>
-                    <label className="block text-gray-700 font-medium mb-1">Full Name (Admin Only)</label>
+                    <label className="block text-xs text-gray-500 mb-1">Upload from Device:</label>
                     <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded"
-                      required
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      className="w-full text-xs text-gray-700 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-gray-800 file:text-white hover:file:bg-gray-700 cursor-pointer"
                     />
                   </div>
+
                   <div>
-                    <label className="block text-gray-700 font-medium mb-1">Department (Admin Only)</label>
-                    <input
-                      type="text"
-                      value={department}
-                      onChange={(e) => setDepartment(e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-700 font-medium mb-1">Designation (Admin Only)</label>
-                    <input
-                      type="text"
-                      value={designation}
-                      onChange={(e) => setDesignation(e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-700 font-medium mb-1">Joining Date (Admin Only)</label>
-                    <input
-                      type="date"
-                      value={joiningDate}
-                      onChange={(e) => setJoiningDate(e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-700 font-medium mb-1">Profile Photo URL (Admin Only)</label>
+                    <label className="block text-xs text-gray-500 mb-1">Or Image URL:</label>
                     <input
                       type="text"
                       value={profilePicture}
                       onChange={(e) => setProfilePicture(e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded"
+                      className="w-full p-2 border border-gray-300 rounded text-xs"
                       placeholder="https://example.com/photo.jpg"
                     />
                   </div>
-                </>
-              )}
 
-              {/* Both Admin and Employee can edit contact details */}
-              <div>
-                <label className="block text-gray-700 font-medium mb-1">Contact Phone</label>
-                <input
-                  type="text"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded"
-                  placeholder="+1234567890"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-gray-700 font-medium mb-1">Home Address</label>
-                <textarea
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded h-20"
-                  placeholder="Street, City, Country"
-                />
-              </div>
+                  {profilePicture && (
+                    <div className="flex items-center gap-3 pt-1">
+                      <span className="text-xs text-gray-500">Preview:</span>
+                      <img
+                        src={profilePicture}
+                        alt="Preview"
+                        className="w-10 h-10 rounded-full object-cover border border-gray-300"
+                        onError={(e) => { e.target.style.display = 'none'; }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setProfilePicture('')}
+                        className="text-xs text-red-600 hover:underline cursor-pointer"
+                      >
+                        Remove Photo
+                      </button>
+                    </div>
+                  )}
+                </div>
 
-              <div className="flex space-x-2 pt-2">
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded font-medium cursor-pointer"
-                >
-                  Save Changes
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsEditing(false);
-                    // Reset fields to current profile settings
-                    setName(profile.user?.name || '');
-                    setPhone(profile.phone || '');
-                    setAddress(profile.address || '');
-                    setDepartment(profile.department || '');
-                    setDesignation(profile.designation || '');
-                    setProfilePicture(profile.profilePicture || '');
-                  }}
-                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded font-medium cursor-pointer"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          ) : (
-            <div className="space-y-4 text-sm text-gray-800">
-              <div className="grid grid-cols-2 gap-4 border-b border-gray-100 pb-3">
-                <div>
-                  <p className="text-xs text-gray-500 font-medium uppercase">Phone Number</p>
-                  <p className="mt-1 font-medium">{profile.phone || 'No phone recorded'}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 font-medium uppercase">Home Address</p>
-                  <p className="mt-1 font-medium">{profile.address || 'No address recorded'}</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 border-b border-gray-100 pb-3">
-                <div>
-                  <p className="text-xs text-gray-500 font-medium uppercase">Department</p>
-                  <p className="mt-1 font-medium">{profile.department}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 font-medium uppercase">Job Designation</p>
-                  <p className="mt-1 font-medium">{profile.designation}</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 border-b border-gray-100 pb-3">
-                <div>
-                  <p className="text-xs text-gray-500 font-medium uppercase">Joining Date</p>
-                  <p className="mt-1 font-medium">
-                    {profile.joiningDate ? new Date(profile.joiningDate).toLocaleDateString() : 'N/A'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 font-medium uppercase">Profile Photo URL</p>
-                  <p className="mt-1 font-mono text-xs overflow-x-auto whitespace-nowrap">
-                    {profile.profilePicture || 'No URL specified'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Documents Management Section */}
-              <div className="mt-6 border-t border-gray-200 pt-4">
-                <h4 className="text-base font-bold text-gray-800 mb-2">Verification Documents</h4>
-                
-                <form onSubmit={handleAddDocument} className="flex gap-2 mb-3">
-                  <input
-                    type="text"
-                    value={newDocumentUrl}
-                    onChange={(e) => setNewDocumentUrl(e.target.value)}
-                    className="flex-1 p-2 border border-gray-300 rounded text-xs"
-                    placeholder="Add Document URL (e.g., Passport, Contract URL)"
-                  />
-                  <button type="submit" className="px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-semibold rounded cursor-pointer">
-                    Add
+                <div className="flex space-x-2 pt-2">
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded font-medium cursor-pointer"
+                  >
+                    Save Changes
                   </button>
-                </form>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditing(false);
+                      setName(profile.user?.name || '');
+                      setPhone(profile.phone || '');
+                      setAddress(profile.address || '');
+                      setDepartment(profile.department || '');
+                      setDesignation(profile.designation || '');
+                      setProfilePicture(profile.profilePicture || '');
+                    }}
+                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded font-medium cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="space-y-4 text-sm text-gray-800">
+                <div className="grid grid-cols-2 gap-4 border-b border-gray-100 pb-3">
+                  <div>
+                    <p className="text-xs text-gray-500 font-medium uppercase">Phone Number</p>
+                    <p className="mt-1 font-medium">{profile.phone || 'No phone recorded'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 font-medium uppercase">Home Address</p>
+                    <p className="mt-1 font-medium">{profile.address || 'No address recorded'}</p>
+                  </div>
+                </div>
 
-                {documents.length === 0 ? (
-                  <p className="text-xs text-gray-500 italic">No files or documents attached.</p>
-                ) : (
-                  <ul className="space-y-1.5">
-                    {documents.map((doc, idx) => (
-                      <li key={idx} className="flex justify-between items-center text-xs bg-gray-50 border border-gray-200 p-2 rounded">
-                        <a href={doc} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium truncate max-w-md">
-                          {doc}
-                        </a>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveDocument(idx)}
-                          className="text-red-600 hover:text-red-800 font-bold px-1"
-                        >
-                          Remove
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                <div className="grid grid-cols-2 gap-4 border-b border-gray-100 pb-3">
+                  <div>
+                    <p className="text-xs text-gray-500 font-medium uppercase">Department</p>
+                    <p className="mt-1 font-medium">{profile.department}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 font-medium uppercase">Job Designation</p>
+                    <p className="mt-1 font-medium">{profile.designation}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 border-b border-gray-100 pb-3">
+                  <div>
+                    <p className="text-xs text-gray-500 font-medium uppercase">Joining Date</p>
+                    <p className="mt-1 font-medium">
+                      {profile.joiningDate ? new Date(profile.joiningDate).toLocaleDateString() : 'N/A'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 font-medium uppercase">Profile Photo</p>
+                    <p className="mt-1 text-xs">
+                      {profile.profilePicture ? 'Custom photo attached' : 'No photo uploaded'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Read-Only Salary Structure */}
+                <div className="mt-6 border-t border-gray-200 pt-4">
+                  <h4 className="text-base font-bold text-gray-800 mb-2">Salary Structure (Read-Only)</h4>
+                  {payroll ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-xs">
+                      <div className="bg-gray-50 p-2.5 rounded border border-gray-200">
+                        <span className="text-gray-500 font-semibold block uppercase">Base</span>
+                        <span className="font-bold text-gray-800 text-sm mt-0.5 block">${payroll.baseSalary?.toLocaleString() || 0}</span>
+                      </div>
+                      <div className="bg-gray-50 p-2.5 rounded border border-gray-200">
+                        <span className="text-green-600 font-semibold block uppercase">Allowances</span>
+                        <span className="font-bold text-green-700 text-sm mt-0.5 block">+${payroll.allowances?.toLocaleString() || 0}</span>
+                      </div>
+                      <div className="bg-gray-50 p-2.5 rounded border border-gray-200">
+                        <span className="text-red-600 font-semibold block uppercase">Deductions</span>
+                        <span className="font-bold text-red-700 text-sm mt-0.5 block">-${payroll.deductions?.toLocaleString() || 0}</span>
+                      </div>
+                      <div className="bg-gray-800 text-white p-2.5 rounded">
+                        <span className="text-gray-300 font-semibold block uppercase">Net</span>
+                        <span className="font-bold text-white text-sm mt-0.5 block">${payroll.netSalary?.toLocaleString() || 0}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-500 italic">No payroll record attached.</p>
+                  )}
+                </div>
+
+                {/* Documents Management Section */}
+                <div className="mt-6 border-t border-gray-200 pt-4">
+                  <h4 className="text-base font-bold text-gray-800 mb-2">Verification Documents</h4>
+                  
+                  <form onSubmit={handleAddDocument} className="flex gap-2 mb-3">
+                    <input
+                      type="text"
+                      value={newDocumentUrl}
+                      onChange={(e) => setNewDocumentUrl(e.target.value)}
+                      className="flex-1 p-2 border border-gray-300 rounded text-xs"
+                      placeholder="Add Document URL (e.g., Passport, Contract URL)"
+                    />
+                    <button type="submit" className="px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-semibold rounded cursor-pointer">
+                      Add
+                    </button>
+                  </form>
+
+                  {documents.length === 0 ? (
+                    <p className="text-xs text-gray-500 italic">No files or documents attached.</p>
+                  ) : (
+                    <ul className="space-y-1.5">
+                      {documents.map((doc, idx) => (
+                        <li key={idx} className="flex justify-between items-center text-xs bg-gray-50 border border-gray-200 p-2 rounded">
+                          <a href={doc} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium truncate max-w-md">
+                            {doc}
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveDocument(idx)}
+                            className="text-red-600 hover:text-red-800 font-bold px-1"
+                          >
+                            Remove
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
