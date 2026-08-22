@@ -1,0 +1,20 @@
+{
+  "name": "dayflow-hrms",
+  "version": "1.0.0",
+  "description": "Dayflow Human Resource Management System (HRMS) MVP scaffold",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "install-all": "npm install && npm install --prefix client && npm install --prefix server",
+    "server": "npm run start --prefix server",
+    "server-dev": "npm run dev --prefix server",
+    "client": "npm run dev --prefix client",
+    "dev": "concurrently \"npm run server-dev\" \"npm run client\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
