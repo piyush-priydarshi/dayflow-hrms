@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth, API_URL } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 const PayrollAdmin = () => {
   const { user, token } = useAuth();
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const [employees, setEmployees] = useState([]);
   const [selectedUserId, setSelectedUserId] = useState('');
@@ -112,13 +114,18 @@ const PayrollAdmin = () => {
 
       const data = await response.json();
       if (response.ok) {
-        setSuccess('Salary details updated successfully!');
+        const msg = 'Salary details updated successfully!';
+        setSuccess(msg);
+        showToast(msg, 'success');
         setPayroll(data.payroll);
       } else {
-        setError(data.message || 'Failed to update salary details');
+        const errorMsg = data.message || 'Failed to update salary details';
+        setError(errorMsg);
+        showToast(errorMsg, 'error');
       }
     } catch (err) {
       setError('Error connecting to server');
+      showToast('Error connecting to server', 'error');
       console.error(err);
     } finally {
       setSubmitLoading(false);
