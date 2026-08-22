@@ -13,6 +13,10 @@ import Profile from './pages/Profile';
 import Attendance from './pages/Attendance';
 import Leave from './pages/Leave';
 import Payroll from './pages/Payroll';
+import AdminDashboard from './pages/AdminDashboard';
+import EmployeeList from './pages/EmployeeList';
+import PayrollAdmin from './pages/PayrollAdmin';
+import AIAssistant from './pages/AIAssistant';
 
 function App() {
   return (
@@ -65,6 +69,38 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Payroll />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin-dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['Admin']}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/employees"
+                element={
+                  <ProtectedRoute allowedRoles={['Admin']}>
+                    <EmployeeList />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/payroll-admin"
+                element={
+                  <ProtectedRoute allowedRoles={['Admin']}>
+                    <PayrollAdmin />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/ai-assistant"
+                element={
+                  <ProtectedRoute>
+                    <AIAssistant />
                   </ProtectedRoute>
                 }
               />
