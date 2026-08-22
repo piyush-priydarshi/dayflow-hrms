@@ -36,6 +36,9 @@ const Navbar = () => {
           <Link to="/payroll" className="text-gray-300 hover:text-white transition-colors">
             Payroll
           </Link>
+          <Link to="/ai-assistant" className="text-gray-300 hover:text-white transition-colors">
+            AI Assistant
+          </Link>
         </div>
 
         <div className="flex items-center space-x-4">
