@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { API_URL } from '../context/AuthContext';
 
 const Signup = () => {
   const [employeeId, setEmployeeId] = useState('');
@@ -9,40 +9,70 @@ const Signup = () => {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('Employee');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { signup } = useAuth();
   const navigate = useNavigate();
+
+  const validatePassword = (pwd) => {
+    if (pwd.length < 8) return 'Password must be at least 8 characters long';
+    if (!/\d/.test(pwd)) return 'Password must contain at least 1 number (0-9)';
+    if (!/[!@#$%^&*(),.?":{}|<>_\-+=[\]\\\/~`]/.test(pwd)) {
+      return 'Password must contain at least 1 special character (!@#$%^&*)';
+    }
+    return null;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    if (!employeeId || !name || !email || !password) {
+    if (!employeeId.trim() || !name.trim() || !email.trim() || !password) {
       setError('Please fill in all fields');
       return;
     }
 
-    // Client-side email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(email.trim())) {
       setError('Please enter a valid email address');
       return;
     }
 
-    // Client-side password validation
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters long');
+    const pwdErr = validatePassword(password);
+    if (pwdErr) {
+      setError(pwdErr);
       return;
     }
 
     setLoading(true);
-    const result = await signup(employeeId, name, email, password, role);
-    setLoading(false);
+    try {
+      const response = await fetch(`${API_URL}/auth/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          employeeId: employeeId.trim(),
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          password,
+          role,
+        }),
+      });
 
-    if (result.success) {
-      navigate('/login');
-    } else {
-      setError(result.message || 'Signup failed');
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || 'Registration failed');
+      } else {
+        setSuccess(true);
+        setTimeout(() => {
+          navigate('/login');
+        }, 1200);
+      }
+    } catch (err) {
+      setError('Network error: Unable to connect to server');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -56,7 +86,13 @@ const Signup = () => {
             {error}
           </div>
         )}
-        
+
+        {success && (
+          <div className="bg-green-50 text-green-700 p-3 rounded border border-green-200 mb-4 text-sm">
+            Account created successfully! Redirecting to login...
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-gray-700 text-sm font-medium mb-1">Employee ID</label>
@@ -101,7 +137,7 @@ const Signup = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-gray-500"
-              placeholder="Min 6 characters"
+              placeholder="Min 8 chars, 1 number, 1 special char"
               required
             />
           </div>
