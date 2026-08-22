@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth, API_URL } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import { exportToCSV } from '../utils/exportToCSV';
 
 const Leave = () => {
   const { user, token } = useAuth();
+  const { showToast } = useToast();
   const [leaves, setLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -51,12 +54,16 @@ const Leave = () => {
     setSuccess('');
 
     if (!startDate || !endDate) {
-      setError('Please provide start and end dates');
+      const msg = 'Please provide start and end dates';
+      setError(msg);
+      showToast(msg, 'error');
       return;
     }
 
     if (new Date(startDate) > new Date(endDate)) {
-      setError('Start date cannot be after end date');
+      const msg = 'Start date cannot be after end date';
+      setError(msg);
+      showToast(msg, 'error');
       return;
     }
 
@@ -74,16 +81,20 @@ const Leave = () => {
       const data = await response.json();
       if (response.ok) {
         setSuccess('Leave request submitted successfully!');
+        showToast('Leave request submitted successfully!', 'success');
         // Reset form
         setStartDate('');
         setEndDate('');
         setRemarks('');
         fetchLeaves(); // Refresh list
       } else {
-        setError(data.message || 'Failed to submit leave request');
+        const errorMsg = data.message || 'Failed to submit leave request';
+        setError(errorMsg);
+        showToast(errorMsg, 'error');
       }
     } catch (err) {
       setError('Error connecting to server');
+      showToast('Error connecting to server', 'error');
     } finally {
       setFormLoading(false);
     }
@@ -103,13 +114,18 @@ const Leave = () => {
       });
       const data = await response.json();
       if (response.ok) {
-        setSuccess(`Request has been ${status.toLowerCase()}!`);
+        const msg = `Request has been ${status.toLowerCase()}!`;
+        setSuccess(msg);
+        showToast(msg, 'success');
         fetchLeaves(); // Refresh list
       } else {
-        setError(data.message || 'Failed to update request');
+        const errorMsg = data.message || 'Failed to update request';
+        setError(errorMsg);
+        showToast(errorMsg, 'error');
       }
     } catch (err) {
       setError('Error connecting to server');
+      showToast('Error connecting to server', 'error');
     }
   };
 
@@ -117,6 +133,27 @@ const Leave = () => {
     if (!isoString) return '';
     const date = new Date(isoString);
     return date.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' });
+  };
+
+  const handleExportCSV = () => {
+    if (!leaves || leaves.length === 0) return;
+
+    const headers = [
+      ...(user.role === 'Admin'
+        ? [
+            { label: 'Employee ID', key: (l) => l.user?.employeeId || 'N/A' },
+            { label: 'Employee Name', key: (l) => l.user?.name || 'N/A' },
+          ]
+        : []),
+      { label: 'Leave Type', key: (l) => l.leaveType || '' },
+      { label: 'Start Date', key: (l) => formatDate(l.startDate) },
+      { label: 'End Date', key: (l) => formatDate(l.endDate) },
+      { label: 'Remarks', key: (l) => l.remarks || '' },
+      { label: 'Status', key: (l) => l.status || 'Pending' },
+    ];
+
+    const filename = user.role === 'Admin' ? 'all_leave_requests.csv' : 'my_leave_history.csv';
+    exportToCSV(leaves, filename, headers);
   };
 
   if (!user) return null;
@@ -143,18 +180,19 @@ const Leave = () => {
       )}
 
       {user.role === 'Employee' ? (
-        // EMPLOYEE VIEW (Application Form + History Table)
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Apply Form Card */}
-          <div className="bg-white p-6 rounded border border-gray-300 shadow-sm">
-            <h2 className="text-lg font-bold text-gray-800 mb-4">Request Leave</h2>
-            <form onSubmit={handleApplyLeave} className="space-y-4 text-sm">
+        // EMPLOYEE VIEW (Form + Personal Leave Listing)
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Apply form */}
+          <div className="bg-white p-6 rounded border border-gray-300 shadow-sm md:col-span-1 h-fit">
+            <h2 className="text-lg font-bold text-gray-800 mb-4">Apply for Leave</h2>
+            
+            <form onSubmit={handleApplyLeave} className="space-y-4">
               <div>
-                <label className="block text-gray-700 font-medium mb-1">Leave Type</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Leave Type</label>
                 <select
                   value={leaveType}
                   onChange={(e) => setLeaveType(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded bg-white"
+                  className="w-full p-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-500 bg-white"
                 >
                   <option value="Paid">Paid Leave</option>
                   <option value="Sick">Sick Leave</option>
@@ -163,35 +201,36 @@ const Leave = () => {
               </div>
 
               <div>
-                <label className="block text-gray-700 font-medium mb-1">Start Date</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
                 <input
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded"
+                  className="w-full p-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-500"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-gray-700 font-medium mb-1">End Date</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
                 <input
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded"
+                  className="w-full p-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-500"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-gray-700 font-medium mb-1">Remarks / Reason</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Remarks / Reason</label>
                 <textarea
                   value={remarks}
                   onChange={(e) => setRemarks(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded h-20"
-                  placeholder="Reason for requesting leave"
-                />
+                  rows="3"
+                  className="w-full p-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-500"
+                  placeholder="Optional details..."
+                ></textarea>
               </div>
 
               <button
@@ -206,7 +245,16 @@ const Leave = () => {
 
           {/* History list */}
           <div className="bg-white p-6 rounded border border-gray-300 shadow-sm md:col-span-2">
-            <h2 className="text-lg font-bold text-gray-800 mb-4">My Leave History</h2>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <h2 className="text-lg font-bold text-gray-800">My Leave History</h2>
+              <button
+                onClick={handleExportCSV}
+                disabled={leaves.length === 0}
+                className="px-3 py-1.5 bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white rounded-xl text-xs font-medium inline-flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-sm self-start sm:self-auto"
+              >
+                <span>📥</span> Export CSV
+              </button>
+            </div>
             {loading ? (
               <p className="text-gray-500 text-sm">Loading logs...</p>
             ) : leaves.length === 0 ? (
@@ -250,7 +298,16 @@ const Leave = () => {
       ) : (
         // ADMIN VIEW (Approvals Listing)
         <div className="bg-white p-6 rounded border border-gray-300 shadow-sm">
-          <h2 className="text-lg font-bold text-gray-800 mb-4">Pending and Past Approvals</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <h2 className="text-lg font-bold text-gray-800">Pending and Past Approvals</h2>
+            <button
+              onClick={handleExportCSV}
+              disabled={leaves.length === 0}
+              className="px-3 py-1.5 bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white rounded-xl text-xs font-medium inline-flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-sm self-start sm:self-auto"
+            >
+              <span>📥</span> Export CSV
+            </button>
+          </div>
           {loading ? (
             <p className="text-gray-500">Loading leave requests...</p>
           ) : leaves.length === 0 ? (

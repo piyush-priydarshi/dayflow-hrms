@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth, API_URL } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 const Profile = () => {
   const { userId } = useParams();
   const { user, token } = useAuth();
+  const { showToast } = useToast();
   const [profile, setProfile] = useState(null);
   const [payroll, setPayroll] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -68,7 +70,9 @@ const Profile = () => {
 
     // Validate image file type
     if (!file.type.startsWith('image/')) {
-      setError('Please select a valid image file');
+      const msg = 'Please select a valid image file';
+      setError(msg);
+      showToast(msg, 'error');
       return;
     }
 
@@ -78,7 +82,9 @@ const Profile = () => {
       setProfilePicture(reader.result);
     };
     reader.onerror = () => {
-      setError('Failed to read image file');
+      const msg = 'Failed to read image file';
+      setError(msg);
+      showToast(msg, 'error');
     };
     reader.readAsDataURL(file);
   };
@@ -107,13 +113,18 @@ const Profile = () => {
       const data = await response.json();
       if (response.ok) {
         setProfile(data.profile);
-        setSuccessMsg('Profile updated successfully!');
+        const msg = 'Profile updated successfully!';
+        setSuccessMsg(msg);
+        showToast(msg, 'success');
         setIsEditing(false);
       } else {
-        setError(data.message || 'Failed to update profile');
+        const errorMsg = data.message || 'Failed to update profile';
+        setError(errorMsg);
+        showToast(errorMsg, 'error');
       }
     } catch (err) {
       setError('Error connecting to server');
+      showToast('Error connecting to server', 'error');
     }
   };
 
@@ -147,12 +158,17 @@ const Profile = () => {
       const data = await response.json();
       if (response.ok) {
         setProfile(data.profile);
-        setSuccessMsg('Documents updated successfully!');
+        const msg = 'Documents updated successfully!';
+        setSuccessMsg(msg);
+        showToast(msg, 'success');
       } else {
-        setError(data.message || 'Failed to update documents');
+        const errorMsg = data.message || 'Failed to update documents';
+        setError(errorMsg);
+        showToast(errorMsg, 'error');
       }
     } catch (err) {
       setError('Error connecting to server');
+      showToast('Error connecting to server', 'error');
     }
   };
 
