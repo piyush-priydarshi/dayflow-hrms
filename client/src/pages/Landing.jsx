@@ -2,6 +2,279 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Landing.css';
 
+// local helper components for the landing page dashboard previews
+const ProfileCard = () => {
+  return (
+    <div className="glass-card w-64 md:w-72 p-5 flex flex-col space-y-4 hover:scale-105 hover:-translate-y-2 hover:shadow-[0_0_30px_rgba(245,158,11,0.2)] hover:border-amber-500/40 transition-all duration-500 cursor-default select-none border border-zinc-800 bg-zinc-900/90 rounded-2xl shadow-2xl">
+      <div className="flex justify-between items-center">
+        <span className="text-[10px] font-mono tracking-widest text-zinc-500 uppercase">Employee Profile</span>
+        <span className="flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>Active</span>
+        </span>
+      </div>
+      
+      <div className="flex items-center space-x-3.5">
+        <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center font-heading font-extrabold text-white text-base shadow-inner">
+          JC
+        </div>
+        <div className="text-left">
+          <h4 className="font-heading font-bold text-zinc-100 text-sm">Jane Cooper</h4>
+          <p className="text-[11px] text-zinc-400">Senior UI Designer</p>
+        </div>
+      </div>
+
+      <div className="border-t border-zinc-800/80 my-1"></div>
+
+      <div className="grid grid-cols-2 gap-4 text-[10px] font-mono text-left">
+        <div>
+          <span className="text-zinc-500 block">Department</span>
+          <span className="text-zinc-200 font-semibold">Product Design</span>
+        </div>
+        <div>
+          <span className="text-zinc-500 block">Location</span>
+          <span className="text-zinc-200 font-semibold">Remote / NY</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AttendanceCard = () => {
+  return (
+    <div className="glass-card w-64 md:w-72 p-5 flex flex-col space-y-4 hover:scale-105 hover:-translate-y-2 hover:shadow-[0_0_30px_rgba(59,130,246,0.2)] hover:border-blue-500/40 transition-all duration-500 cursor-default select-none border border-zinc-800 bg-zinc-900/90 rounded-2xl shadow-2xl">
+      <div className="flex justify-between items-center">
+        <span className="text-[10px] font-mono tracking-widest text-zinc-500 uppercase">Attendance</span>
+        <span className="text-[10px] font-bold text-blue-400 font-mono">Shift Active</span>
+      </div>
+
+      <div className="flex items-center justify-between text-left">
+        <div className="space-y-1">
+          <span className="text-xs text-zinc-400 block">Daily Hours Logged</span>
+          <div className="flex items-baseline space-x-1">
+            <span className="text-2xl font-bold font-heading text-white">6.5</span>
+            <span className="text-xs text-zinc-500">/ 8.0 hrs</span>
+          </div>
+        </div>
+        {/* SVG Radial Progress Indicator */}
+        <div className="w-12 h-12 relative flex items-center justify-center">
+          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+            <path className="text-zinc-800" strokeWidth="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            <path className="text-blue-500 transition-all duration-500" strokeWidth="3" strokeDasharray="81.25, 100" strokeLinecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+          </svg>
+          <span className="absolute text-[10px] font-bold text-zinc-200">81%</span>
+        </div>
+      </div>
+
+      <div className="bg-zinc-950/50 p-2.5 rounded-lg border border-zinc-900/50 text-[10px] font-mono space-y-1 text-zinc-400 text-left">
+        <div className="flex justify-between">
+          <span>Check-in:</span>
+          <span className="text-zinc-300 font-semibold">09:00 AM</span>
+        </div>
+        <div className="flex justify-between">
+          <span>Target end:</span>
+          <span className="text-zinc-300 font-semibold">05:00 PM</span>
+        </div>
+      </div>
+
+      <button className="w-full py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-lg text-xs font-semibold font-body transition-colors cursor-pointer shadow-md shadow-blue-900/20 active:scale-95">
+        Clock Out Now
+      </button>
+    </div>
+  );
+};
+
+const PayrollCard = () => {
+  return (
+    <div className="glass-card w-64 md:w-72 p-5 flex flex-col space-y-4 hover:scale-105 hover:-translate-y-2 hover:shadow-[0_0_30px_rgba(236,72,153,0.2)] hover:border-pink-500/40 transition-all duration-500 cursor-default select-none border border-zinc-800 bg-zinc-900/90 rounded-2xl shadow-2xl">
+      <div className="flex justify-between items-center">
+        <span className="text-[10px] font-mono tracking-widest text-zinc-500 uppercase">Payroll Slip</span>
+        <span className="px-2 py-0.5 rounded bg-pink-500/10 border border-pink-500/20 text-pink-400 text-[9px] font-bold tracking-wider uppercase font-mono">
+          Finalized
+        </span>
+      </div>
+
+      <div className="text-left">
+        <span className="text-xs text-zinc-400 block">Monthly Net Payout</span>
+        <span className="text-2xl font-bold font-heading text-white tracking-tight">$8,450.00</span>
+      </div>
+
+      <div className="space-y-2 text-[10px] font-mono text-left">
+        <div className="space-y-1">
+          <div className="flex justify-between text-zinc-400">
+            <span>Base Salary</span>
+            <span className="text-zinc-200 font-semibold">$6,200</span>
+          </div>
+          <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
+            <div className="w-[73.3%] h-full bg-pink-500"></div>
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <div className="flex justify-between text-zinc-400">
+            <span>Allowances</span>
+            <span className="text-zinc-200 font-semibold">$2,250</span>
+          </div>
+          <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
+            <div className="w-[26.6%] h-full bg-amber-500"></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Miniature Trend Line SVG */}
+      <div className="flex items-center space-x-2 bg-zinc-950/40 p-2 rounded border border-zinc-900/40 text-[9px] font-mono text-zinc-500">
+        <span className="whitespace-nowrap">Pay History:</span>
+        <svg className="w-full h-4 text-emerald-400" viewBox="0 0 100 20" fill="none">
+          <path d="M0 15 L20 12 L40 18 L60 8 L80 10 L100 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          <path d="M0 15 L20 12 L40 18 L60 8 L80 10 L100 2 L100 20 L0 20 Z" fill="currentColor" fillOpacity="0.05" />
+        </svg>
+      </div>
+    </div>
+  );
+};
+
+const HeroWorkspacePreview = () => {
+  return (
+    <div className="relative w-full h-[460px] flex items-center justify-center overflow-visible select-none my-12">
+      {/* Background Decorative Neon Glows */}
+      <div className="absolute w-72 h-72 rounded-full bg-amber-500/10 blur-[80px] top-1/4 left-1/3"></div>
+      <div className="absolute w-72 h-72 rounded-full bg-blue-500/10 blur-[80px] bottom-1/4 right-1/3"></div>
+      
+      {/* Layered stack with responsive overlapping grid layout */}
+      <div className="relative w-full max-w-lg h-full flex items-center justify-center scale-90 sm:scale-100">
+        {/* Card 1: Attendance Card (Left/Back layer) */}
+        <div className="absolute left-[-20px] top-[30px] sm:left-[-50px] sm:top-[20px] transform -rotate-6 scale-90 sm:scale-95 z-10 hover:z-40 hover:-translate-y-4 hover:rotate-0 hover:scale-100 transition-all duration-500 ease-out">
+          <AttendanceCard />
+        </div>
+
+        {/* Card 2: Profile Card (Center/Front layer) */}
+        <div className="absolute top-[120px] sm:top-[110px] z-30 transform scale-100 sm:scale-105 hover:z-40 hover:-translate-y-4 hover:scale-110 transition-all duration-500 ease-out">
+          <ProfileCard />
+        </div>
+
+        {/* Card 3: Payroll Card (Right/Back layer) */}
+        <div className="absolute right-[-20px] top-[50px] sm:right-[-50px] sm:top-[40px] transform rotate-6 scale-90 sm:scale-95 z-20 hover:z-40 hover:-translate-y-4 hover:rotate-0 hover:scale-100 transition-all duration-500 ease-out">
+          <PayrollCard />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const LeavePipelinePreview = () => {
+  return (
+    <div className="w-full max-w-md p-6 bg-zinc-900/60 border border-zinc-800 rounded-3xl shadow-xl space-y-6 hover:border-amber-500/30 transition-colors duration-500 select-none">
+      <div className="flex justify-between items-center text-left">
+        <h4 className="font-heading font-bold text-sm text-zinc-100 flex items-center space-x-2">
+          <span>Leave Approval Pipeline</span>
+          <span className="px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[9px] font-mono uppercase">Pending Admin</span>
+        </h4>
+        <span className="text-[10px] font-mono text-zinc-500">ID: #LV-9382</span>
+      </div>
+
+      <div className="flex items-center space-x-3.5 bg-zinc-950/40 p-4 rounded-xl border border-zinc-900/50 text-left">
+        <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center font-heading font-extrabold text-amber-500 text-sm">
+          AD
+        </div>
+        <div>
+          <h5 className="font-heading font-semibold text-zinc-200 text-xs">Alex Danvers</h5>
+          <p className="text-[10px] text-zinc-500 font-mono">Requested: Annual Paid Vacation (5 days)</p>
+        </div>
+      </div>
+
+      <div className="relative pl-6 space-y-6 border-l border-zinc-800/80 ml-4 py-2 text-left">
+        {/* Step 1: Checked */}
+        <div className="relative">
+          <span className="absolute left-[-29px] top-0 w-4 h-4 rounded-full bg-emerald-500/20 border border-emerald-500 flex items-center justify-center text-emerald-400 text-[8px] font-bold">
+            ✓
+          </span>
+          <div className="space-y-0.5">
+            <span className="text-[11px] font-bold text-zinc-200 block">1. Employee Submission</span>
+            <span className="text-[9px] text-zinc-500 font-mono">Submitted by Alex on Aug 21, 09:30 AM</span>
+          </div>
+        </div>
+
+        {/* Step 2: Checked */}
+        <div className="relative">
+          <span className="absolute left-[-29px] top-0 w-4 h-4 rounded-full bg-emerald-500/20 border border-emerald-500 flex items-center justify-center text-emerald-400 text-[8px] font-bold">
+            ✓
+          </span>
+          <div className="space-y-0.5">
+            <span className="text-[11px] font-bold text-zinc-200 block">2. Manager Policy Validation</span>
+            <span className="text-[9px] text-zinc-500 font-mono">Approved by Sarah Miller (Tech Manager) - Aug 21, 02:15 PM</span>
+          </div>
+        </div>
+
+        {/* Step 3: Pending */}
+        <div className="relative">
+          <span className="absolute left-[-29px] top-0 w-4 h-4 rounded-full bg-amber-500/20 border border-amber-500/50 flex items-center justify-center text-amber-500 text-[8px] font-bold animate-pulse">
+            ●
+          </span>
+          <div className="space-y-0.5">
+            <span className="text-[11px] font-bold text-zinc-300 block">3. HR / Payroll Allocation Offset</span>
+            <span className="text-[9px] text-zinc-500 font-mono">Pending final calculation update by Administrator</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AnalyticsOverlappingCards = () => {
+  return (
+    <div className="relative w-full max-w-xl h-96 flex items-center justify-center select-none overflow-visible">
+      {/* Background radial ambient light */}
+      <div className="absolute w-64 h-64 rounded-full bg-amber-500/5 blur-[70px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
+
+      <div className="relative w-full max-w-md h-full flex items-center justify-center scale-95 sm:scale-100">
+        {/* Card A: Team Attendance Rate (Left/Back layer) */}
+        <div className="absolute left-[-10px] top-[30px] sm:left-[-30px] sm:top-[20px] transform -rotate-3 hover:scale-105 hover:-translate-y-4 hover:shadow-[0_0_25px_rgba(245,158,11,0.15)] hover:border-amber-500/30 transition-all duration-500 z-10 border border-zinc-200 bg-white w-60 sm:w-64 p-5 rounded-2xl shadow-xl">
+          <div className="flex justify-between items-center mb-3 text-left">
+            <span className="text-[10px] font-mono tracking-wide text-zinc-400 uppercase">Attendance Metric</span>
+            <span className="text-[9px] font-bold text-emerald-600 font-mono">+1.2% MoM</span>
+          </div>
+          <div className="space-y-1 mb-4 text-left">
+            <span className="text-xs text-zinc-500 block">Weekly Attendance Rate</span>
+            <span className="text-2xl font-bold font-heading text-zinc-800">94.8%</span>
+          </div>
+          <div className="flex items-end justify-between h-12 pt-2 px-1">
+            <div className="w-6 bg-zinc-100 rounded-t h-[70%]"></div>
+            <div className="w-6 bg-zinc-100 rounded-t h-[80%]"></div>
+            <div className="w-6 bg-zinc-200 rounded-t h-[65%]"></div>
+            <div className="w-6 bg-amber-500 rounded-t h-[94.8%]"></div>
+          </div>
+        </div>
+
+        {/* Card B: Absence Breakdown (Right/Front layer) */}
+        <div className="absolute right-[-10px] bottom-[30px] sm:right-[-30px] sm:bottom-[20px] transform rotate-3 hover:scale-105 hover:-translate-y-4 hover:shadow-[0_0_25px_rgba(59,130,246,0.15)] hover:border-blue-500/30 transition-all duration-500 z-20 border border-zinc-200 bg-white w-60 sm:w-64 p-5 rounded-2xl shadow-xl">
+          <div className="flex justify-between items-center mb-3 text-left">
+            <span className="text-[10px] font-mono tracking-wide text-zinc-400 uppercase">Absence Analytics</span>
+            <span className="text-[9px] font-bold text-blue-600 font-mono">This Month</span>
+          </div>
+          <div className="space-y-1 mb-3 text-left">
+            <span className="text-xs text-zinc-500 block">Active Leave Breakdown</span>
+            <span className="text-lg font-bold font-heading text-zinc-800">3 Employees Out</span>
+          </div>
+          <div className="space-y-2 text-[9px] font-mono text-zinc-500 pt-1 text-left">
+            <div className="flex justify-between">
+              <span className="flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-blue-500 mr-1.5"></span>Engineering</span>
+              <span className="text-zinc-800 font-semibold">2 Requests</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5"></span>Marketing</span>
+              <span className="text-zinc-800 font-semibold">1 Request</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-zinc-400 mr-1.5"></span>Finance</span>
+              <span className="text-zinc-800 font-semibold">0 Requests</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Landing = () => {
   const navigate = useNavigate();
   
@@ -66,15 +339,8 @@ const Landing = () => {
             Build and optimize <br />your workforce.
           </h1>
           
-          {/* Centered Spline 3D/CSS Sphere Placeholder */}
-          <div className="my-12 flex justify-center items-center w-full min-h-[360px]">
-            {/* CSS Glossy Sphere representing the 3D ribbon mesh */}
-            <div className="glass-sphere-hero animate-float flex items-center justify-center text-center">
-              <span className="text-white/20 text-xs font-mono select-none tracking-widest uppercase">
-                [ Spline 3D Placeholder ]
-              </span>
-            </div>
-          </div>
+          {/* Layered Floating Workspace Dashboard Preview */}
+          <HeroWorkspacePreview />
 
           <p className="text-zinc-400 max-w-xl text-base md:text-lg mb-10 leading-relaxed">
             The automated, centralized workspace to streamline your organization's daily directory structure, check-in schedules, leaves approvals, and payroll distributions.
@@ -110,13 +376,9 @@ const Landing = () => {
             </p>
           </div>
 
-          {/* Right Gold Mesh Sphere Placeholder */}
+          {/* Leave Request Pipeline Workflow Preview */}
           <div className="flex justify-center items-center">
-            <div className="glass-sphere-gold animate-float flex items-center justify-center text-center" style={{ animationDelay: '-2s' }}>
-              <span className="text-black/20 text-xs font-mono select-none tracking-widest uppercase">
-                [ Spline 3D Placeholder ]
-              </span>
-            </div>
+            <LeavePipelinePreview />
           </div>
 
         </div>
@@ -203,12 +465,9 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* 6. Overlapping Spheres Section */}
+      {/* 6. Overlapping Analytics Previews */}
       <section className="bg-zinc-50 py-20 border-b border-zinc-200 flex justify-center items-center">
-        <div className="flex -space-x-12 relative select-none">
-          <div className="glass-sphere-overlapping-1 animate-float" style={{ animationDelay: '-1s' }}></div>
-          <div className="glass-sphere-overlapping-2 animate-float" style={{ animationDelay: '-3.5s' }}></div>
-        </div>
+        <AnalyticsOverlappingCards />
       </section>
 
       {/* 7. Dark Intersection Section */}

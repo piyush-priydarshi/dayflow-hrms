@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ToastProvider } from './context/ToastContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 
@@ -22,105 +23,107 @@ import AIAssistant from './pages/AIAssistant';
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
-          <Navbar />
-          <div className="flex-1">
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<Landing />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/verify-email" element={<VerifyEmail />} />
+      <ToastProvider>
+        <Router>
+          <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
+            <Navbar />
+            <div className="flex-1">
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/" element={<Landing />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/verify-email" element={<VerifyEmail />} />
 
-              {/* Protected Routes */}
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin-dashboard"
-                element={
-                  <ProtectedRoute allowedRoles={['Admin']}>
-                    <Dashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/profile/:userId"
-                element={
-                  <ProtectedRoute>
-                    <Profile />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/attendance"
-                element={
-                  <ProtectedRoute>
-                    <Attendance />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/leave"
-                element={
-                  <ProtectedRoute>
-                    <Leave />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/payroll"
-                element={
-                  <ProtectedRoute>
-                    <Payroll />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin-dashboard"
-                element={
-                  <ProtectedRoute allowedRoles={['Admin']}>
-                    <AdminDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/employees"
-                element={
-                  <ProtectedRoute allowedRoles={['Admin']}>
-                    <EmployeeList />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/payroll-admin"
-                element={
-                  <ProtectedRoute allowedRoles={['Admin']}>
-                    <PayrollAdmin />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/ai-assistant"
-                element={
-                  <ProtectedRoute>
-                    <AIAssistant />
-                  </ProtectedRoute>
-                }
-              />
+                {/* Protected Routes */}
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin-dashboard"
+                  element={
+                    <ProtectedRoute allowedRoles={['Admin']}>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/profile/:userId"
+                  element={
+                    <ProtectedRoute>
+                      <Profile />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/attendance"
+                  element={
+                    <ProtectedRoute>
+                      <Attendance />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/leave"
+                  element={
+                    <ProtectedRoute>
+                      <Leave />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/payroll"
+                  element={
+                    <ProtectedRoute>
+                      <Payroll />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin-dashboard"
+                  element={
+                    <ProtectedRoute allowedRoles={['Admin']}>
+                      <AdminDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/employees"
+                  element={
+                    <ProtectedRoute allowedRoles={['Admin']}>
+                      <EmployeeList />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/payroll-admin"
+                  element={
+                    <ProtectedRoute allowedRoles={['Admin']}>
+                      <PayrollAdmin />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/ai-assistant"
+                  element={
+                    <ProtectedRoute>
+                      <AIAssistant />
+                    </ProtectedRoute>
+                  }
+                />
 
-              {/* Redirect root to dashboard */}
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
+                {/* Redirect root to dashboard */}
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              </Routes>
+            </div>
           </div>
-        </div>
-      </Router>
+        </Router>
+      </ToastProvider>
     </AuthProvider>
   );
 }
