@@ -3,10 +3,12 @@ import { Link } from 'react-router-dom';
 import { useAuth, API_URL } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { exportToCSV } from '../utils/exportToCSV';
+import DatePicker from '../components/DatePicker';
 
 const Leave = () => {
   const { user, token } = useAuth();
   const { showToast } = useToast();
+
   const [leaves, setLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -20,22 +22,29 @@ const Leave = () => {
   const [formLoading, setFormLoading] = useState(false);
 
   const fetchLeaves = async () => {
+    if (!user || !token) return;
+
     setLoading(true);
     setError('');
+
     try {
       const endpoint = user.role === 'Admin' ? 'all' : 'my';
+
       const response = await fetch(`${API_URL}/leaves/${endpoint}`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
+
       const data = await response.json();
+
       if (response.ok) {
         setLeaves(data.leaves || []);
       } else {
         setError(data.message || 'Failed to fetch leave records');
       }
     } catch (err) {
+      console.error('Error fetching leaves:', err);
       setError('Error connecting to server');
     } finally {
       setLoading(false);
@@ -50,6 +59,7 @@ const Leave = () => {
 
   const handleApplyLeave = async (e) => {
     e.preventDefault();
+
     setError('');
     setSuccess('');
 
@@ -68,33 +78,50 @@ const Leave = () => {
     }
 
     setFormLoading(true);
+
     try {
       const response = await fetch(`${API_URL}/leaves`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ leaveType, startDate, endDate, remarks }),
+        body: JSON.stringify({
+          leaveType,
+          startDate,
+          endDate,
+          remarks,
+        }),
       });
 
       const data = await response.json();
+
       if (response.ok) {
-        setSuccess('Leave request submitted successfully!');
-        showToast('Leave request submitted successfully!', 'success');
+        const msg = 'Leave request submitted successfully!';
+
+        setSuccess(msg);
+        showToast(msg, 'success');
+
         // Reset form
         setStartDate('');
         setEndDate('');
         setRemarks('');
-        fetchLeaves(); // Refresh list
+
+        fetchLeaves();
       } else {
-        const errorMsg = data.message || 'Failed to submit leave request';
+        const errorMsg =
+          data.message || 'Failed to submit leave request';
+
         setError(errorMsg);
         showToast(errorMsg, 'error');
       }
     } catch (err) {
-      setError('Error connecting to server');
-      showToast('Error connecting to server', 'error');
+      console.error('Leave submission error:', err);
+
+      const msg = 'Error connecting to server';
+
+      setError(msg);
+      showToast(msg, 'error');
     } finally {
       setFormLoading(false);
     }
@@ -103,276 +130,540 @@ const Leave = () => {
   const handleUpdateStatus = async (leaveId, status) => {
     setError('');
     setSuccess('');
+
     try {
-      const response = await fetch(`${API_URL}/leaves/${leaveId}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status }),
-      });
+      const response = await fetch(
+        `${API_URL}/leaves/${leaveId}/status`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ status }),
+        }
+      );
+
       const data = await response.json();
+
       if (response.ok) {
         const msg = `Request has been ${status.toLowerCase()}!`;
+
         setSuccess(msg);
         showToast(msg, 'success');
-        fetchLeaves(); // Refresh list
+
+        fetchLeaves();
       } else {
-        const errorMsg = data.message || 'Failed to update request';
+        const errorMsg =
+          data.message || 'Failed to update request';
+
         setError(errorMsg);
         showToast(errorMsg, 'error');
       }
     } catch (err) {
-      setError('Error connecting to server');
-      showToast('Error connecting to server', 'error');
+      console.error('Status update error:', err);
+
+      const msg = 'Error connecting to server';
+
+      setError(msg);
+      showToast(msg, 'error');
     }
   };
 
   const formatDate = (isoString) => {
     if (!isoString) return '';
+
     const date = new Date(isoString);
-    return date.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' });
+
+    if (Number.isNaN(date.getTime())) {
+      return '';
+    }
+
+    return date.toLocaleDateString([], {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
   };
 
   const handleExportCSV = () => {
-    if (!leaves || leaves.length === 0) return;
+    if (!leaves || leaves.length === 0) {
+      showToast('No leave records to export', 'error');
+      return;
+    }
 
     const headers = [
       ...(user.role === 'Admin'
         ? [
-            { label: 'Employee ID', key: (l) => l.user?.employeeId || 'N/A' },
-            { label: 'Employee Name', key: (l) => l.user?.name || 'N/A' },
+            {
+              label: 'Employee ID',
+              key: (leave) =>
+                leave.user?.employeeId || 'N/A',
+            },
+            {
+              label: 'Employee Name',
+              key: (leave) =>
+                leave.user?.name || 'N/A',
+            },
           ]
         : []),
-      { label: 'Leave Type', key: (l) => l.leaveType || '' },
-      { label: 'Start Date', key: (l) => formatDate(l.startDate) },
-      { label: 'End Date', key: (l) => formatDate(l.endDate) },
-      { label: 'Remarks', key: (l) => l.remarks || '' },
-      { label: 'Status', key: (l) => l.status || 'Pending' },
+
+      {
+        label: 'Leave Type',
+        key: (leave) => leave.leaveType || '',
+      },
+      {
+        label: 'Start Date',
+        key: (leave) => formatDate(leave.startDate),
+      },
+      {
+        label: 'End Date',
+        key: (leave) => formatDate(leave.endDate),
+      },
+      {
+        label: 'Remarks',
+        key: (leave) => leave.remarks || '',
+      },
+      {
+        label: 'Status',
+        key: (leave) => leave.status || 'Pending',
+      },
     ];
 
-    const filename = user.role === 'Admin' ? 'all_leave_requests.csv' : 'my_leave_history.csv';
+    const filename =
+      user.role === 'Admin'
+        ? 'all_leave_requests.csv'
+        : 'my_leave_history.csv';
+
     exportToCSV(leaves, filename, headers);
+
+    showToast('Leave CSV exported successfully!', 'success');
   };
 
-  if (!user) return null;
+  if (!user) {
+    return null;
+  }
 
   return (
-    <div className="container mx-auto p-6 max-w-5xl">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Leave Management</h1>
-        <Link to="/dashboard" className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded text-sm font-medium">
-          Back to Dashboard
+    <div className="container mx-auto px-6 py-8 space-y-8 max-w-5xl">
+
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="font-heading text-3xl font-bold text-white tracking-tight">
+            Leave Management
+          </h1>
+
+          <p className="text-xs text-zinc-400 mt-1">
+            Application requests, balance metrics, and approval queue
+          </p>
+        </div>
+
+        <Link
+          to="/dashboard"
+          className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-200 rounded-xl text-xs font-semibold transition-colors"
+        >
+          ← Dashboard
         </Link>
       </div>
 
+      {/* Success Message */}
       {success && (
-        <div className="bg-green-50 text-green-700 p-3 rounded border border-green-200 mb-6 text-sm">
-          {success}
+        <div className="bg-emerald-500/10 text-emerald-400 p-4 rounded-2xl border border-emerald-500/20 text-xs flex items-center gap-2">
+          <span>✓</span>
+          <span>{success}</span>
         </div>
       )}
 
+      {/* Error Message */}
       {error && (
-        <div className="bg-red-50 text-red-700 p-3 rounded border border-red-200 mb-6 text-sm">
-          {error}
+        <div className="bg-rose-500/10 text-rose-400 p-4 rounded-2xl border border-rose-500/20 text-xs flex items-center gap-2">
+          <span>⚠️</span>
+          <span>{error}</span>
         </div>
       )}
 
+      {/* ================= EMPLOYEE VIEW ================= */}
       {user.role === 'Employee' ? (
-        // EMPLOYEE VIEW (Form + Personal Leave Listing)
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Apply form */}
-          <div className="bg-white p-6 rounded border border-gray-300 shadow-sm md:col-span-1 h-fit">
-            <h2 className="text-lg font-bold text-gray-800 mb-4">Apply for Leave</h2>
-            
-            <form onSubmit={handleApplyLeave} className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+          {/* Apply Form Card */}
+          <div className="df-glass-card rounded-3xl p-6 border border-zinc-800 h-fit">
+            <h2 className="font-heading text-lg font-bold text-white mb-4 pb-2 border-b border-zinc-800">
+              Request Time Off
+            </h2>
+
+            <form
+              onSubmit={handleApplyLeave}
+              className="space-y-4 text-xs"
+            >
+
+              {/* Leave Type */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Leave Type</label>
+                <label className="block text-zinc-300 font-semibold mb-1.5">
+                  Leave Type
+                </label>
+
                 <select
                   value={leaveType}
-                  onChange={(e) => setLeaveType(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-500 bg-white"
+                  onChange={(e) =>
+                    setLeaveType(e.target.value)
+                  }
+                  className="w-full df-input cursor-pointer"
                 >
-                  <option value="Paid">Paid Leave</option>
-                  <option value="Sick">Sick Leave</option>
-                  <option value="Unpaid">Unpaid Leave</option>
+                  <option
+                    value="Paid"
+                    className="bg-zinc-900 text-white"
+                  >
+                    Paid Leave
+                  </option>
+
+                  <option
+                    value="Sick"
+                    className="bg-zinc-900 text-white"
+                  >
+                    Sick Leave
+                  </option>
+
+                  <option
+                    value="Unpaid"
+                    className="bg-zinc-900 text-white"
+                  >
+                    Unpaid Leave
+                  </option>
                 </select>
               </div>
 
+              {/* Start Date */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                <input
-                  type="date"
+                <label className="block text-zinc-300 font-semibold mb-1.5">
+                  Start Date
+                </label>
+
+                <DatePicker
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-500"
+                  onChange={(date) => {
+                    setStartDate(date);
+
+                    if (endDate && date > endDate) {
+                      setEndDate('');
+                    }
+                  }}
+                  placeholder="Select start date"
                   required
                 />
               </div>
 
+              {/* End Date */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                <input
-                  type="date"
+                <label className="block text-zinc-300 font-semibold mb-1.5">
+                  End Date
+                </label>
+
+                <DatePicker
                   value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-500"
+                  onChange={(date) =>
+                    setEndDate(date)
+                  }
+                  placeholder="Select end date"
+                  minDate={startDate}
                   required
                 />
               </div>
 
+              {/* Remarks */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Remarks / Reason</label>
+                <label className="block text-zinc-300 font-semibold mb-1.5">
+                  Reason / Remarks
+                </label>
+
                 <textarea
                   value={remarks}
-                  onChange={(e) => setRemarks(e.target.value)}
-                  rows="3"
-                  className="w-full p-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-500"
-                  placeholder="Optional details..."
-                ></textarea>
+                  onChange={(e) =>
+                    setRemarks(e.target.value)
+                  }
+                  className="w-full df-input h-20 resize-none"
+                  placeholder="State reason for absence..."
+                />
               </div>
 
+              {/* Submit */}
               <button
                 type="submit"
                 disabled={formLoading}
-                className="w-full py-2 bg-gray-800 hover:bg-gray-700 text-white rounded font-medium transition-colors cursor-pointer"
+                className="w-full py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 font-bold rounded-xl text-xs transition-all cursor-pointer shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {formLoading ? 'Submitting...' : 'Apply Request'}
+                {formLoading
+                  ? 'Submitting...'
+                  : 'Submit Request'}
               </button>
             </form>
           </div>
 
-          {/* History list */}
-          <div className="bg-white p-6 rounded border border-gray-300 shadow-sm md:col-span-2">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-              <h2 className="text-lg font-bold text-gray-800">My Leave History</h2>
+          {/* Employee History */}
+          <div className="df-glass-card rounded-3xl p-6 border border-zinc-800 md:col-span-2">
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-2 border-b border-zinc-800">
+              <div>
+                <h2 className="font-heading text-lg font-bold text-white">
+                  My Leave Applications
+                </h2>
+
+                <span className="text-xs text-zinc-500">
+                  {leaves.length} requests logged
+                </span>
+              </div>
+
               <button
                 onClick={handleExportCSV}
                 disabled={leaves.length === 0}
                 className="px-3 py-1.5 bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white rounded-xl text-xs font-medium inline-flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-sm self-start sm:self-auto"
               >
-                <span>📥</span> Export CSV
+                <span>📥</span>
+                Export CSV
               </button>
             </div>
+
             {loading ? (
-              <p className="text-gray-500 text-sm">Loading logs...</p>
+              <p className="text-zinc-500 text-xs py-4 text-center">
+                Loading applications...
+              </p>
             ) : leaves.length === 0 ? (
-              <p className="text-gray-500 text-sm italic">No leave applications found.</p>
+              <p className="text-zinc-500 text-xs italic py-4 text-center">
+                No leave applications recorded.
+              </p>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-sm">
+                <table className="w-full text-left text-xs border-collapse">
+
                   <thead>
-                    <tr className="bg-gray-100 border-b border-gray-300">
-                      <th className="p-3 text-gray-700 font-bold">Leave Type</th>
-                      <th className="p-3 text-gray-700 font-bold">Start Date</th>
-                      <th className="p-3 text-gray-700 font-bold">End Date</th>
-                      <th className="p-3 text-gray-700 font-bold">Remarks</th>
-                      <th className="p-3 text-gray-700 font-bold">Status</th>
+                    <tr className="border-b border-zinc-800 text-zinc-400 font-semibold uppercase tracking-wider text-[10px]">
+                      <th className="pb-3 px-3">
+                        Type
+                      </th>
+
+                      <th className="pb-3 px-3">
+                        Start Date
+                      </th>
+
+                      <th className="pb-3 px-3">
+                        End Date
+                      </th>
+
+                      <th className="pb-3 px-3">
+                        Remarks
+                      </th>
+
+                      <th className="pb-3 px-3 text-right">
+                        Status
+                      </th>
                     </tr>
                   </thead>
-                  <tbody>
+
+                  <tbody className="divide-y divide-zinc-800">
                     {leaves.map((leave) => (
-                      <tr key={leave._id} className="border-b border-gray-200 hover:bg-gray-50">
-                        <td className="p-3 text-gray-800 font-medium">{leave.leaveType}</td>
-                        <td className="p-3 text-gray-800">{formatDate(leave.startDate)}</td>
-                        <td className="p-3 text-gray-800">{formatDate(leave.endDate)}</td>
-                        <td className="p-3 text-gray-800 max-w-xs truncate">{leave.remarks || '--'}</td>
-                        <td className="p-3">
-                          <span className={`inline-block text-xs font-semibold px-2 py-0.5 rounded border ${
-                            leave.status === 'Approved' ? 'bg-green-50 text-green-700 border-green-200' :
-                            leave.status === 'Rejected' ? 'bg-red-50 text-red-700 border-red-200' :
-                            'bg-yellow-50 text-yellow-700 border-yellow-200'
-                          }`}>
-                            {leave.status}
+                      <tr
+                        key={leave._id}
+                        className="hover:bg-zinc-800/30 transition-colors"
+                      >
+                        <td className="py-3 px-3 font-semibold text-white">
+                          {leave.leaveType}
+                        </td>
+
+                        <td className="py-3 px-3 text-zinc-300">
+                          {formatDate(leave.startDate)}
+                        </td>
+
+                        <td className="py-3 px-3 text-zinc-300">
+                          {formatDate(leave.endDate)}
+                        </td>
+
+                        <td className="py-3 px-3 text-zinc-400 max-w-xs truncate">
+                          {leave.remarks || '--'}
+                        </td>
+
+                        <td className="py-3 px-3 text-right">
+                          <span
+                            className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                              leave.status === 'Approved'
+                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                : leave.status === 'Rejected'
+                                ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                                : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                            }`}
+                          >
+                            {leave.status || 'Pending'}
                           </span>
                         </td>
                       </tr>
                     ))}
                   </tbody>
+
                 </table>
               </div>
             )}
           </div>
         </div>
       ) : (
-        // ADMIN VIEW (Approvals Listing)
-        <div className="bg-white p-6 rounded border border-gray-300 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-            <h2 className="text-lg font-bold text-gray-800">Pending and Past Approvals</h2>
+
+        /* ================= ADMIN VIEW ================= */
+        <div className="df-glass-card rounded-3xl p-6 border border-zinc-800">
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-2 border-b border-zinc-800">
+
+            <div>
+              <h2 className="font-heading text-lg font-bold text-white">
+                Pending & Reviewed Requests
+              </h2>
+
+              <span className="text-xs text-zinc-500">
+                {leaves.length} requests in system
+              </span>
+            </div>
+
             <button
               onClick={handleExportCSV}
               disabled={leaves.length === 0}
               className="px-3 py-1.5 bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white rounded-xl text-xs font-medium inline-flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-sm self-start sm:self-auto"
             >
-              <span>📥</span> Export CSV
+              <span>📥</span>
+              Export CSV
             </button>
           </div>
+
           {loading ? (
-            <p className="text-gray-500">Loading leave requests...</p>
+            <p className="text-zinc-500 text-xs py-4 text-center">
+              Loading requests...
+            </p>
           ) : leaves.length === 0 ? (
-            <p className="text-gray-500 italic">No leave requests found.</p>
+            <p className="text-zinc-500 text-xs italic py-4 text-center">
+              No leave requests found.
+            </p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-sm">
+              <table className="w-full text-left text-xs border-collapse">
+
                 <thead>
-                  <tr className="bg-gray-100 border-b border-gray-300">
-                    <th className="p-3 text-gray-700 font-bold">Emp ID</th>
-                    <th className="p-3 text-gray-700 font-bold">Employee</th>
-                    <th className="p-3 text-gray-700 font-bold">Type</th>
-                    <th className="p-3 text-gray-700 font-bold">Duration</th>
-                    <th className="p-3 text-gray-700 font-bold">Remarks</th>
-                    <th className="p-3 text-gray-700 font-bold">Status</th>
-                    <th className="p-3 text-gray-700 font-bold text-center">Action Actions</th>
+                  <tr className="border-b border-zinc-800 text-zinc-400 font-semibold uppercase tracking-wider text-[10px]">
+
+                    <th className="pb-3 px-3">
+                      Emp ID
+                    </th>
+
+                    <th className="pb-3 px-3">
+                      Employee Name
+                    </th>
+
+                    <th className="pb-3 px-3">
+                      Type
+                    </th>
+
+                    <th className="pb-3 px-3">
+                      Duration
+                    </th>
+
+                    <th className="pb-3 px-3">
+                      Remarks
+                    </th>
+
+                    <th className="pb-3 px-3">
+                      Status
+                    </th>
+
+                    <th className="pb-3 px-3 text-right">
+                      Action
+                    </th>
                   </tr>
                 </thead>
-                <tbody>
+
+                <tbody className="divide-y divide-zinc-800">
                   {leaves.map((leave) => (
-                    <tr key={leave._id} className="border-b border-gray-200 hover:bg-gray-50">
-                      <td className="p-3 text-gray-800">{leave.user?.employeeId || 'N/A'}</td>
-                      <td className="p-3 text-gray-800 font-medium">{leave.user?.name || 'N/A'}</td>
-                      <td className="p-3 text-gray-800">{leave.leaveType}</td>
-                      <td className="p-3 text-gray-800">
-                        {formatDate(leave.startDate)} - {formatDate(leave.endDate)}
+                    <tr
+                      key={leave._id}
+                      className="hover:bg-zinc-800/30 transition-colors"
+                    >
+
+                      <td className="py-3 px-3 font-mono text-zinc-400">
+                        {leave.user?.employeeId || 'N/A'}
                       </td>
-                      <td className="p-3 text-gray-800 max-w-xs truncate">{leave.remarks || '--'}</td>
-                      <td className="p-3">
-                        <span className={`inline-block text-xs font-semibold px-2 py-0.5 rounded border ${
-                          leave.status === 'Approved' ? 'bg-green-50 text-green-700 border-green-200' :
-                          leave.status === 'Rejected' ? 'bg-red-50 text-red-700 border-red-200' :
-                          'bg-yellow-50 text-yellow-700 border-yellow-200'
-                        }`}>
-                          {leave.status}
+
+                      <td className="py-3 px-3 font-bold text-white">
+                        {leave.user?.name || 'N/A'}
+                      </td>
+
+                      <td className="py-3 px-3 text-zinc-300">
+                        {leave.leaveType}
+                      </td>
+
+                      <td className="py-3 px-3 text-zinc-300 whitespace-nowrap">
+                        {formatDate(leave.startDate)} -{' '}
+                        {formatDate(leave.endDate)}
+                      </td>
+
+                      <td className="py-3 px-3 text-zinc-400 max-w-xs truncate">
+                        {leave.remarks || '--'}
+                      </td>
+
+                      <td className="py-3 px-3">
+                        <span
+                          className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                            leave.status === 'Approved'
+                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                              : leave.status === 'Rejected'
+                              ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                              : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                          }`}
+                        >
+                          {leave.status || 'Pending'}
                         </span>
                       </td>
-                      <td className="p-3 text-center space-x-2">
+
+                      <td className="py-3 px-3 text-right">
                         {leave.status === 'Pending' ? (
-                          <>
+                          <div className="flex justify-end gap-2">
+
                             <button
-                              onClick={() => handleUpdateStatus(leave._id, 'Approved')}
-                              className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded cursor-pointer"
+                              onClick={() =>
+                                handleUpdateStatus(
+                                  leave._id,
+                                  'Approved'
+                                )
+                              }
+                              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold rounded-lg cursor-pointer transition-colors shadow-sm"
                             >
                               Approve
                             </button>
+
                             <button
-                              onClick={() => handleUpdateStatus(leave._id, 'Rejected')}
-                              className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded cursor-pointer"
+                              onClick={() =>
+                                handleUpdateStatus(
+                                  leave._id,
+                                  'Rejected'
+                                )
+                              }
+                              className="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold rounded-lg cursor-pointer transition-colors shadow-sm"
                             >
                               Reject
                             </button>
-                          </>
+
+                          </div>
                         ) : (
-                          <span className="text-gray-400 text-xs italic">Reviewed</span>
+                          <span className="text-zinc-500 text-[11px] italic">
+                            Reviewed
+                          </span>
                         )}
                       </td>
+
                     </tr>
                   ))}
                 </tbody>
+
               </table>
             </div>
           )}
         </div>
       )}
+
     </div>
   );
 };

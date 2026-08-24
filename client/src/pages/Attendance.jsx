@@ -16,7 +16,7 @@ const Attendance = () => {
   const [success, setSuccess] = useState('');
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  // Live clock
+  // Real-time live clock
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -184,34 +184,21 @@ const Attendance = () => {
 
   const calculateDuration = (checkIn, checkOut) => {
     if (!checkIn) return '--';
-    if (!checkOut) return 'In Progress';
 
     const start = new Date(checkIn);
-    const end = new Date(checkOut);
+    const end = checkOut ? new Date(checkOut) : new Date();
 
     const diffMs = end.getTime() - start.getTime();
 
-    if (Number.isNaN(diffMs) || diffMs < 0) {
-      return '--';
+    if (Number.isNaN(diffMs) || diffMs <= 0) {
+      return '0h 0m';
     }
 
     const totalMinutes = Math.floor(diffMs / (1000 * 60));
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
 
-    if (hours === 0 && minutes === 0) {
-      return '0m';
-    }
-
-    if (hours === 0) {
-      return `${minutes}m`;
-    }
-
-    if (minutes === 0) {
-      return `${hours}h`;
-    }
-
-    return `${hours}h ${minutes}m`;
+    return `${hours}h ${minutes}m${!checkOut ? ' (In progress)' : ''}`;
   };
 
   const handleExportCSV = () => {
@@ -275,7 +262,7 @@ const Attendance = () => {
   return (
     <div className="container mx-auto px-6 py-8 space-y-8 max-w-5xl">
 
-      {/* Header */}
+      {/* Top Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="font-heading text-3xl font-bold text-white tracking-tight">
@@ -283,7 +270,7 @@ const Attendance = () => {
           </h1>
 
           <p className="text-xs text-zinc-400 mt-1">
-            Daily clock-in check registers and log audits
+            Real-time daily clocking, duration calculations, and log audits
           </p>
         </div>
 
@@ -311,15 +298,13 @@ const Attendance = () => {
         </div>
       )}
 
-      {/* Employee Clocking Section */}
+      {/* Clocking Card for Employees */}
       {user.role === 'Employee' && (
         <div className="df-glass-card rounded-3xl p-6 md:p-8 border border-zinc-800 relative overflow-hidden">
-
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
 
             {/* Clocking Information */}
             <div className="space-y-3">
-
               <div className="flex items-center gap-2">
                 <span className="text-lg">⏱️</span>
 
@@ -340,8 +325,8 @@ const Attendance = () => {
                       Today's Status:
                     </span>
 
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                      {todayRecord.status}
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      {todayRecord.status || 'Present'}
                     </span>
                   </div>
 
@@ -370,14 +355,12 @@ const Attendance = () => {
                       </strong>
                     </span>
                   </div>
-
                 </div>
               ) : (
                 <p className="text-xs text-zinc-400 italic">
                   You have not clocked in yet today.
                 </p>
               )}
-
             </div>
 
             {/* Live Clock + Actions */}
@@ -385,10 +368,8 @@ const Attendance = () => {
 
               {/* Live Digital Clock */}
               <div className="flex items-center space-x-2.5 bg-zinc-900 text-zinc-100 px-4 py-2 rounded-xl border border-zinc-800 shadow-sm">
-
                 <span className="relative flex h-2.5 w-2.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                 </span>
 
@@ -406,12 +387,10 @@ const Attendance = () => {
                     })}
                   </span>
                 </div>
-
               </div>
 
               {/* Clock Buttons */}
               <div className="flex space-x-3">
-
                 <button
                   onClick={handleCheckIn}
                   disabled={actionLoading || !!todayRecord}
@@ -431,18 +410,14 @@ const Attendance = () => {
                 >
                   {actionLoading ? 'Clocking...' : 'Clock Out'}
                 </button>
-
               </div>
-
             </div>
-
           </div>
         </div>
       )}
 
-      {/* Attendance Logs */}
+      {/* Attendance Logs Table */}
       <div className="df-glass-card rounded-2xl p-6 border border-zinc-800">
-
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
 
           <div>
@@ -466,7 +441,6 @@ const Attendance = () => {
             <span>📥</span>
             Export CSV
           </button>
-
         </div>
 
         {loading ? (
@@ -479,12 +453,9 @@ const Attendance = () => {
           </p>
         ) : (
           <div className="overflow-x-auto">
-
             <table className="w-full text-left text-xs border-collapse">
-
               <thead>
                 <tr className="border-b border-zinc-800 text-zinc-400 font-semibold uppercase tracking-wider text-[10px]">
-
                   <th className="pb-3 px-3">
                     Date
                   </th>
@@ -516,18 +487,15 @@ const Attendance = () => {
                   <th className="pb-3 px-3 text-right">
                     Status
                   </th>
-
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-zinc-800">
-
                 {records.map((record) => (
                   <tr
                     key={record._id}
                     className="hover:bg-zinc-800/30 transition-colors"
                   >
-
                     {/* Date */}
                     <td className="py-3 px-3 font-medium text-zinc-200">
                       {formatDate(record.date)}
@@ -566,7 +534,6 @@ const Attendance = () => {
 
                     {/* Status */}
                     <td className="py-3 px-3 text-right">
-
                       <span
                         className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                           record.status === 'Present'
@@ -578,21 +545,14 @@ const Attendance = () => {
                       >
                         {record.status || 'Present'}
                       </span>
-
                     </td>
-
                   </tr>
                 ))}
-
               </tbody>
-
             </table>
-
           </div>
         )}
-
       </div>
-
     </div>
   );
 };
